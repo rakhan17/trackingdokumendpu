@@ -34,8 +34,16 @@ export function SpreadsheetInput({ kind, rows, demoOnly = false }: { kind: Kind;
   });
   if(!changedRows.length)return;
   if(demoOnly){toast.info('Data contoh hanya untuk preview. Perubahan tidak dikirim ke Firestore.');return;}
-  if(kind==='input_1'&&changedRows.some(([,cells])=>String(cells[columns.findIndex(c=>c.key==='nomor_spm')]??'')!==String(rows[Number(Object.keys(matrix)[0])-1]?.nomor_spm??''))){
-   toast.error('Nomor SPM di Input 1 dipilih dari data Input 2. Ubah primary key melalui Input 2.');return;
+  if(kind==='input_1'){
+   const keyColumn=columns.findIndex(column=>column.key==='nomor_spm');
+   const attemptedKeyEdit=changedRows.some(([index,cells])=>{
+    const existing=rows[Number(index)-1];
+    return String(cells[keyColumn]??'')!==String((existing as Input1Row|undefined)?.nomor_spm??'');
+   });
+   if(attemptedKeyEdit){
+    toast.error('Nomor SPM di Input 1 hanya dapat dipilih dari daftar Input 2. Primary key dikelola melalui Input 2.');
+    return;
+   }
   }
   void Promise.all(changedRows.map(async([index,cells])=>{
    const rowIndex=Number(index)-1;const existing=rows[rowIndex];const row=(kind==='input_1'?blank1():blank2()) as Row;row.id=existing?.id??row.id;
