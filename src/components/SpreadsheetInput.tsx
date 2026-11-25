@@ -28,7 +28,7 @@ export function SpreadsheetInput({ kind, rows }: { kind: Kind; rows: Row[] }) {
     const textFormatCells = Array.from({ length: Math.max(100, rows.length + 30) }, (_, r) =>
       documentNumberColumns.map(c => ({ r: r + 1, c, v: { v: '', m: '', ct: { fa: '@', t: 's' }, ...(columns[c].key === 'nomor_spm' ? { bg: '#f3e8ff', fc: '#7e22ce' } : {}) } }))
     ).flat().filter(cell => !cells.some(existing => existing.r === cell.r && existing.c === cell.c));
-    return [{ name: kind === 'input_1' ? 'Input 1' : 'Input 2', celldata: [...header, ...cells, ...textFormatCells], row: Math.max(rows.length + 30, 100), column: columns.length, config: { columnlen: Object.fromEntries(columns.map((_, i) => [i, 150])) }];
+    return [{ name: kind === 'input_1' ? 'Input 1' : 'Input 2', celldata: [...header, ...cells, ...textFormatCells], row: Math.max(rows.length + 30, 100), column: columns.length, config: { columnlen: Object.fromEntries(columns.map((_, i) => [i, 150])) } }];
   }, [columns, documentNumberColumns, kind, rows]);
 
   useEffect(() => {
