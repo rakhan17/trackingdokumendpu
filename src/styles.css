@@ -86,3 +86,32 @@
  .sidebar-collapsed .sidebar{width:58px}
  .sidebar-collapsed .main-area{margin-left:58px}
 }
+
+/* Focused spreadsheet toolbar and explicit Firebase save workflow */
+.sheet-toolbar{display:flex;align-items:center;gap:8px;min-height:54px;height:auto;flex:0 0 auto;padding:7px 12px;background:#f8fafc;border-bottom:1px solid #dce2e9;white-space:nowrap}
+.sheet-toolbar .secondary-button,.sheet-toolbar .primary-button{height:34px;padding:0 11px;border-radius:6px;font-size:11px}
+.sheet-toolbar .danger-button{color:#b91c1c;border-color:#fecaca}
+.sheet-toolbar .danger-button:hover{background:#fef2f2}
+.sheet-toolbar .save-button{background:#6d28d9;color:#fff;border-color:#6d28d9}
+.sheet-toolbar .save-button:disabled{background:#e9d5ff;color:#7e22ce;border-color:#e9d5ff;cursor:not-allowed;opacity:1}
+.row-selector{display:flex;align-items:center;gap:7px;font-size:10px;font-weight:600;color:#64748b}
+.row-selector select{height:32px;min-width:160px;max-width:230px;border:1px solid #dbe1e8;border-radius:6px;padding:0 9px;background:#fff;color:#334155;font-size:10px}
+.save-state{display:flex;align-items:center;gap:6px;font-size:10px;color:#64748b;margin-left:auto;min-width:112px}
+.upload-progress{height:3px;flex:0 0 3px;background:#ede9fe;overflow:hidden}
+.upload-progress span{display:block;height:100%;background:#7c3aed;transition:width .18s ease}
+.sheet-route .sheet-workspace{height:100%;min-height:0}
+.sheet-route .page-content{height:100dvh;min-height:0}
+.sheet-grid-frame{flex:1;min-height:0;overflow:hidden}
+.fortune-wrap{height:100%;width:100%;overflow:hidden}
+.fortune-wrap .fortune-sheet-container{height:100%!important;width:100%!important}
+@media(max-width:950px){
+ .sheet-toolbar{flex-wrap:wrap;min-height:82px;gap:6px}
+ .sheet-toolbar .save-state{margin-left:auto}
+}
+@media(max-width:650px){
+ .sheet-toolbar{min-height:112px;align-content:center}
+ .row-selector{order:4}
+ .row-selector select{min-width:120px}
+ .sheet-toolbar .save-state{margin-left:0}
+ .sheet-toolbar .save-button{margin-left:auto}
+}
