@@ -21,45 +21,48 @@ export function SpreadsheetInput({kind,rows,input2Rows=[],onRowsChange,onActiveR
  const sheetData=useMemo(()=>{
   const cells:any[]=[];
   const put=(r:number,c:number,value:any,style:Record<string,any>={})=>cells.push({r,c,v:{v:value,m:String(value??''),...style}});
-  const title=(size=12)=>({bg:'#FFFFFF',fc:'#111111',bl:1,fs:size,ht:1,vt:1});
-  const group=(bg:string)=>({bg,fc:'#111111',bl:1,fs:10,ht:1,vt:1});
-  const header=(bg:string)=>({bg,fc:'#111111',bl:1,fs:10,ht:1,vt:1});
+  const title=(size=9)=>({bg:'#FFFFFF',fc:'#111111',bl:1,fs:size,ff:'Tahoma',ht:1,vt:1});
+  const group=(bg:string)=>({bg,fc:'#111111',bl:1,fs:9,ff:'Tahoma',ht:1,vt:1,wrap:1});
+  const header=(bg:string)=>({bg,fc:'#111111',bl:1,fs:9,ff:'Tahoma',ht:1,vt:1,wrap:1});
   let merge:Record<string,any>={};
   let rowlen:Record<string,number>={};
   const widths:number[]=[];
   if(isOne){
-   put(0,0,'TRACKING DOKUMEN',{...title(16),fc:'#111111'});
-   put(1,0,'SKPD: DINAS PEKERJAAN UMUM',{...title(),fc:'#111111'});
-   put(2,0,'Periode: 1 Januari 2026 s.d. 31 Oktober 2026',{...title(),fc:'#111111'});
-   put(4,0,'NO',group('#D9E1F2'));
+   put(0,0,'TRACKING DOKUMEN',{...title(9),ht:1,vt:1});
+   put(1,0,'SKPD: DINAS PEKERJAAN UMUM',{...title(9)});
+   put(2,0,'Periode: 1 Januari 2026 s.d. 31 Oktober 2026',{...title(9)});
+   put(4,0,'NO',group('#BFBFBF'));
+   for(let col=1;col<=3;col++)put(4,col,'',group('#FFFF00'));
+   for(let col=4;col<=6;col++)put(4,col,'',group('#92D050'));
+   for(let col=7;col<=9;col++)put(4,col,'',group('#00B0F0'));
+   put(4,10,'Bulan ',group('#00B0F0'));
    put(4,1,'Surat Permintaan Pembayaran (SPP)',group('#FFFF00'));
    put(4,4,'Surat Perintah Membayar (SPM)',group('#92D050'));
    put(4,7,'Surat Perintah Pencairan Dana (SP2D)',group('#00B0F0'));
-   put(4,10,'Bulan',group('#00B0F0'));
-   const fills:Record<string,string>={no:'#D9E1F2',nomor_spp:'#FFFF00',tanggal_spp:'#FFFF00',nilai_spp:'#FFFF00',nomor_spm:'#E739DF',tanggal_spm:'#92D050',nilai_spm:'#92D050',nomor_sp2d:'#00B0F0',tanggal_sp2d:'#00B0F0',nilai_sp2d:'#00B0F0',bulan:'#00B0F0'};
+
+   const fills:Record<string,string>={no:'#BFBFBF',nomor_spp:'#FFFF00',tanggal_spp:'#FFFF00',nilai_spp:'#FFFF00',nomor_spm:'#E739DF',tanggal_spm:'#92D050',nilai_spm:'#92D050',nomor_sp2d:'#00B0F0',tanggal_sp2d:'#00B0F0',nilai_sp2d:'#00B0F0',bulan:'#00B0F0'};
    columns.forEach((col,c)=>{if(col.key!=='no'&&col.key!=='bulan')put(5,c,col.label,header(fills[String(col.key)]||'#FFFFFF'));});
    merge={
-    '0_0':{r:0,c:0,rs:1,cs:11},'1_0':{r:1,c:0,rs:1,cs:11},'2_0':{r:2,c:0,rs:1,cs:11},
+    '0_0':{r:0,c:0,rs:1,cs:10},'1_0':{r:1,c:0,rs:1,cs:10},'2_0':{r:2,c:0,rs:1,cs:10},
     '4_0':{r:4,c:0,rs:2,cs:1},'4_1':{r:4,c:1,rs:1,cs:3},'4_4':{r:4,c:4,rs:1,cs:3},'4_7':{r:4,c:7,rs:1,cs:3},'4_10':{r:4,c:10,rs:2,cs:1}
    };
-   rowlen={'0':30,'1':24,'2':24,'3':10,'4':28,'5':28};
-   widths.push(55,230,125,125,230,125,125,230,125,125,95);
+   rowlen={'0':20,'1':20,'2':20,'3':8,'4':20,'5':20};
+   widths.push(28,343,107,97,343,107,97,343,107,97,68);
   }else{
-   put(0,0,'PEMERINTAH KOTA BALIKPAPAN',{...title(14),fc:'#111111'});
-   put(1,0,'REGISTER SPM (TRANSAKSI)',{...title(),fc:'#111111'});
-   put(2,0,'SEMUA SKPD (KONSOLIDASI)',{...title(),fc:'#111111'});
-   put(3,0,'PERIODE: 1 Januari 2026 s.d. 31 Oktober 2026',{...title(),fc:'#111111'});
-   const input2Fills=['#FCE4D6','#FCE4D6','#E739DF','#FCE4D6','#FCE4D6','#FCE4D6','#FCE4D6','#FCE4D6','#FCE4D6'];
+   put(0,0,'PEMERINTAH KOTA BALIKPAPAN',{...title(12),ff:'Calibri'});
+   put(1,0,'REGISTER SPM (TRANSAKSI)',{...title(12),ff:'Calibri'});
+   put(2,0,'SEMUA SKPD (KONSOLIDASI)',{...title(12),ff:'Calibri'});
+   put(3,0,'PERIODE: 1 Januari 2026 s.d 31 OKTOBER  2026',{...title(12),ff:'Calibri'});
+   const input2Fills=['#FCE4D6','#FCE4D6','#FCE4D6','#FCE4D6','#FCE4D6','#FCE4D6','#FCE4D6','#FCE4D6','#FCE4D6'];
    columns.forEach((col,c)=>{
     if(c===7)put(5,c,'Nilai (Rp)',header('#FCE4D6'));
     else if(c!==8)put(5,c,col.label,header(input2Fills[c]));
-    if(c===8)put(6,c,'Bulan',header('#FCE4D6'));
-    else if(c===7)put(6,c,'Bruto',header('#FCE4D6'));
-    else if(c===7)put(6,c,'Bruto',header('#FCE4D6'));
+    if(c===7)put(6,c,'Bruto',header('#FCE4D6'));
+    if(c===8)put(6,c,'Bulan ',header('#FCE4D6'));
    });
-   merge={'0_0':{r:0,c:0,rs:1,cs:9},'1_0':{r:1,c:0,rs:1,cs:9},'2_0':{r:2,c:0,rs:1,cs:9},'3_0':{r:3,c:0,rs:1,cs:9},'5_0':{r:5,c:0,rs:2,cs:1},'5_1':{r:5,c:1,rs:2,cs:1},'5_2':{r:5,c:2,rs:2,cs:1},'5_3':{r:5,c:3,rs:2,cs:1},'5_4':{r:5,c:4,rs:2,cs:1},'5_5':{r:5,c:5,rs:2,cs:1},'5_6':{r:5,c:6,rs:2,cs:1},'5_8':{r:5,c:8,rs:2,cs:1}};
-   rowlen={'0':26,'1':23,'2':23,'3':23,'4':10,'5':25,'6':28};
-   widths.push(55,130,220,180,220,360,130,150,100);
+   merge={'0_0':{r:0,c:0,rs:1,cs:8},'1_0':{r:1,c:0,rs:1,cs:8},'2_0':{r:2,c:0,rs:1,cs:8},'3_0':{r:3,c:0,rs:1,cs:8},'5_0':{r:5,c:0,rs:2,cs:1},'5_1':{r:5,c:1,rs:2,cs:1},'5_2':{r:5,c:2,rs:2,cs:1},'5_3':{r:5,c:3,rs:2,cs:1},'5_4':{r:5,c:4,rs:2,cs:1},'5_5':{r:5,c:5,rs:2,cs:1},'5_6':{r:5,c:6,rs:2,cs:1},'5_7':{r:5,c:7,rs:1,cs:1}};
+   rowlen={'0':16,'1':16,'2':16,'3':16,'4':8,'5':30,'6':20};
+   widths.push(41,104,321,160,91,356,90,132,91);
   }
   const dataCells=rows.flatMap((row,index)=>columns.map((col,c)=>{
    const value=(row as any)[col.key];
