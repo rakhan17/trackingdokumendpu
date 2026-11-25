@@ -5,10 +5,15 @@ import { auth } from '../firebase';
 interface AuthContextValue {
   user: User | null;
   loading: boolean;
-  login: (email: string, password: string) => Promise<void>;
+  login: (username: string, password: string) => Promise<void>;
   logout: () => Promise<void>;
 }
 const AuthContext = createContext<AuthContextValue | null>(null);
+
+// Firebase Email/Password remains the identity provider, but users enter only
+// their username. The corresponding Firebase Auth email is internal.
+const usernameToAuthEmail = (username: string) =>
+  `${username.trim().toLowerCase()}@trackingdokumenpu.firebaseapp.com`;
 
 export function AuthProvider({ children }: { children: ReactNode }) {
   const [user, setUser] = useState<User | null>(null);
@@ -16,7 +21,9 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   useEffect(() => onAuthStateChanged(auth, next => { setUser(next); setLoading(false); }), []);
   const value = useMemo<AuthContextValue>(() => ({
     user, loading,
-    login: async (email, password) => { await signInWithEmailAndPassword(auth, email.trim(), password); },
+    login: async (username, password) => {
+      await signInWithEmailAndPassword(auth, usernameToAuthEmail(username), password);
+    },
     logout: async () => { await signOut(auth); }
   }), [user, loading]);
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;
