@@ -21,9 +21,9 @@ export function SpreadsheetInput({kind,rows,input2Rows=[],onRowsChange,onActiveR
  const sheetData=useMemo(()=>{
   const cells:any[]=[];
   const put=(r:number,c:number,value:any,style:Record<string,any>={})=>cells.push({r,c,v:{v:value,m:String(value??''),...style}});
-  const title=(size=9)=>({bg:'#FFFFFF',fc:'#111111',bl:1,fs:size,ff:'Tahoma',ht:1,vt:1});
-  const group=(bg:string)=>({bg,fc:'#111111',bl:1,fs:9,ff:'Tahoma',ht:1,vt:1,wrap:1});
-  const header=(bg:string)=>({bg,fc:'#111111',bl:1,fs:9,ff:'Tahoma',ht:1,vt:1,wrap:1});
+  const title=(size=9)=>({bg:'#FFFFFF',fc:'#111111',bl:1,br:1,bt:1,bb:1,fs:size,ff:'Tahoma',ht:1,vt:1,tb:1});
+  const group=(bg:string)=>({bg,fc:'#111111',bl:1,br:1,bt:1,bb:1,fs:9,ff:'Tahoma',ht:1,vt:1,tb:1});
+  const header=(bg:string)=>({bg,fc:'#111111',bl:1,br:1,bt:1,bb:1,fs:9,ff:'Tahoma',ht:1,vt:1,tb:1});
   let merge:Record<string,any>={};
   let rowlen:Record<string,number>={};
   const widths:number[]=[];
@@ -48,7 +48,7 @@ export function SpreadsheetInput({kind,rows,input2Rows=[],onRowsChange,onActiveR
     '0_0':{r:0,c:0,rs:1,cs:10},'1_0':{r:1,c:0,rs:1,cs:10},'2_0':{r:2,c:0,rs:1,cs:10},
     '4_0':{r:4,c:0,rs:2,cs:1},'4_1':{r:4,c:1,rs:1,cs:3},'4_4':{r:4,c:4,rs:1,cs:3},'4_7':{r:4,c:7,rs:1,cs:3},'4_10':{r:4,c:10,rs:2,cs:1}
    };
-   rowlen={'0':20,'1':20,'2':20,'3':8,'4':20,'5':20};
+   rowlen={'0':15,'1':15,'2':15,'3':8,'4':15,'5':15};
    widths.push(28,343,107,97,343,107,97,343,107,97,68);
   }else{
    put(0,0,'PEMERINTAH KOTA BALIKPAPAN',{...title(12),ff:'Calibri'});
@@ -62,7 +62,7 @@ export function SpreadsheetInput({kind,rows,input2Rows=[],onRowsChange,onActiveR
     if(c===7)put(6,c,'Bruto',header('#FCE4D6'));
     if(c===8)put(6,c,'Bulan ',header('#FCE4D6'));
    });
-   merge={'0_0':{r:0,c:0,rs:1,cs:8},'1_0':{r:1,c:0,rs:1,cs:8},'2_0':{r:2,c:0,rs:1,cs:8},'3_0':{r:3,c:0,rs:1,cs:8},'5_0':{r:5,c:0,rs:2,cs:1},'5_1':{r:5,c:1,rs:2,cs:1},'5_2':{r:5,c:2,rs:2,cs:1},'5_3':{r:5,c:3,rs:2,cs:1},'5_4':{r:5,c:4,rs:2,cs:1},'5_5':{r:5,c:5,rs:2,cs:1},'5_6':{r:5,c:6,rs:2,cs:1}};
+   merge={'0_0':{r:0,c:0,rs:1,cs:8},'1_0':{r:1,c:0,rs:1,cs:8},'2_0':{r:2,c:0,rs:1,cs:8},'3_0':{r:3,c:0,rs:1,cs:8},'5_0':{r:5,c:0,rs:2,cs:1},'5_1':{r:5,c:1,rs:2,cs:1},'5_2':{r:5,c:2,rs:2,cs:1},'5_3':{r:5,c:3,rs:2,cs:1},'5_4':{r:5,c:4,rs:2,cs:1},'5_5':{r:5,c:5,rs:2,cs:1},'5_6':{r:5,c:6,rs:2,cs:1},'5_8':{r:5,c:8,rs:2,cs:1}};
    rowlen={'0':16,'1':16,'2':16,'3':16,'4':8,'5':30,'6':20};
    widths.push(41,104,321,160,91,356,90,132,91);
   }
@@ -80,7 +80,7 @@ export function SpreadsheetInput({kind,rows,input2Rows=[],onRowsChange,onActiveR
   }
   return [{
    name:isOne?'Input 1':'Input 2',index:isOne?'input1':'input2',status:1,order:0,
-   row:dataStart+formattedRows,column:columns.length,defaultRowHeight:22,defaultColWidth:110,
+   row:dataStart+formattedRows,column:columns.length,defaultRowHeight:isOne?24:25.5,defaultColWidth:110,
    celldata:cells,showGridLines:1,
    config:{merge,rowlen,columnlen:Object.fromEntries(widths.map((width,index)=>[index,width]))}
   }];
@@ -88,20 +88,16 @@ export function SpreadsheetInput({kind,rows,input2Rows=[],onRowsChange,onActiveR
 
  useEffect(()=>{baseline.current=rows.map(row=>columns.map(col=>String((row as any)[col.key]??'')));},[rows,columns]);
 
- const onGridClick=useCallback(()=>{
-  requestAnimationFrame(()=>{
-   try{
-    const selection=workbookRef.current?.getSelection?.();
-    const active=Array.isArray(selection)?selection[0]:null;
-    const row=active?.row?.[0]; const col=active?.column?.[0];
-    const keyCol=columns.findIndex(column=>column.key==='nomor_spm');
-    if(isOne && col===keyCol && typeof row==='number' && row>=dataStart){
-     const target=rows[row-dataStart];
-     if(target) onActiveRowChange?.(target.id, (value:string)=>workbookRef.current?.setCellValue(row,keyCol,value));
-     else onActiveRowChange?.('',undefined);
-    }else if(isOne){onActiveRowChange?.('',undefined);}
-   }catch(error){console.error('Unable to read active spreadsheet cell',error);}
-  });
+ const onSelectionChange=useCallback((_sheetId:string,active:any)=>{
+  if(!isOne)return;
+  const row=active?.row_focus??active?.row?.[0];
+  const col=active?.column_focus??active?.column?.[0];
+  const keyCol=columns.findIndex(column=>column.key==='nomor_spm');
+  if(typeof row==='number'&&col===keyCol&&row>=dataStart){
+   const target=rows[row-dataStart];
+   if(target)onActiveRowChange?.(target.id,(value:string)=>workbookRef.current?.setCellValue(row,keyCol,value));
+   else onActiveRowChange?.('',undefined);
+  }else onActiveRowChange?.('',undefined);
  },[columns,dataStart,isOne,onActiveRowChange,rows]);
 
  const onChange=useCallback((workbookData:any[])=>{
@@ -144,5 +140,5 @@ export function SpreadsheetInput({kind,rows,input2Rows=[],onRowsChange,onActiveR
   }
  },[columns,dataStart,input2Rows,isOne,onRowsChange,rows]);
 
- return <div className="fortune-wrap" onMouseUp={onGridClick}><Workbook key={kind} ref={workbookRef} data={sheetData as any} onChange={onChange} showToolbar showFormulaBar showSheetTabs={false} lang="en"/></div>;
+ return <div className="fortune-wrap"><Workbook key={kind} ref={workbookRef} data={sheetData as any} onChange={onChange} hooks={{afterSelectionChange:onSelectionChange}} showToolbar showFormulaBar showSheetTabs={false} lang="en"/></div>;
 }
