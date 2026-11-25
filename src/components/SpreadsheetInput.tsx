@@ -10,11 +10,12 @@ type Row=Input1Row|Input2Row;
 const blank1=():Input1Row=>({id:createRowId(),no:'',nomor_spp:'',tanggal_spp:'',nilai_spp:null,nomor_spm:'',tanggal_spm:'',nilai_spm:null,nomor_sp2d:'',tanggal_sp2d:'',nilai_sp2d:null,bulan:''});
 const blank2=():Input2Row=>({id:createRowId(),no:'',tanggal_spm:'',nomor_spm:'',unit_skpd:'',nama_penerima:'',keterangan:'',jenis_spm:'',nilai_bruto:null,bulan:''});
 
-export function SpreadsheetInput({kind,rows,input2Rows=[],onRowsChange}:{kind:Kind;rows:Row[];input2Rows?:Input2Row[];onRowsChange:(rows:Row[])=>void}){
+export function SpreadsheetInput({kind,rows,input2Rows=[],onRowsChange,onActiveRowChange}:{kind:Kind;rows:Row[];input2Rows?:Input2Row[];onRowsChange:(rows:Row[])=>void;onActiveRowChange?:(id:string)=>void}){
  const isOne=kind==='input_1';
  const columns=isOne?INPUT1_COLUMNS:INPUT2_COLUMNS;
  const dataStart=isOne?6:7;
  const baseline=useRef<string[][]>([]);
+ const workbookRef=useRef<any>(null);
  const input2Keys=useMemo(()=>[...new Set(input2Rows.map(row=>String(row.nomor_spm||'').trim()).filter(Boolean))],[input2Rows]);
 
  const sheetData=useMemo(()=>{
@@ -90,6 +91,18 @@ export function SpreadsheetInput({kind,rows,input2Rows=[],onRowsChange}:{kind:Ki
 
  useEffect(()=>{baseline.current=rows.map(row=>columns.map(col=>String((row as any)[col.key]??'')));},[rows,columns]);
 
+ const onGridClick=useCallback(()=>{
+  requestAnimationFrame(()=>{
+   const selection=workbookRef.current?.getSelection?.();
+   const active=Array.isArray(selection)?selection[0]:null;
+   const row=active?.row?.[0]; const col=active?.column?.[0];
+   const keyCol=columns.findIndex(column=>column.key==='nomor_spm');
+   if(isOne && col===keyCol && typeof row==='number' && row>=dataStart){
+    const target=rows[row-dataStart]; if(target) onActiveRowChange?.(target.id);
+   }
+  });
+ },[columns,dataStart,isOne,onActiveRowChange,rows]);
+
  const onChange=useCallback((workbookData:any[])=>{
   const sheet=workbookData?.[0];if(!sheet)return;
   const next=[...rows];
@@ -130,5 +143,5 @@ export function SpreadsheetInput({kind,rows,input2Rows=[],onRowsChange}:{kind:Ki
   }
  },[columns,dataStart,input2Rows,isOne,onRowsChange,rows]);
 
- return <div className="fortune-wrap"><Workbook data={sheetData as any} onChange={onChange} showToolbar showFormulaBar showSheetTabs={false} lang="en"/></div>;
+ return <div className="fortune-wrap" onMouseUp={onGridClick}><Workbook key={kind} ref={workbookRef} data={sheetData as any} onChange={onChange} showToolbar showFormulaBar showSheetTabs={false} lang="en"/></div>;
 }
