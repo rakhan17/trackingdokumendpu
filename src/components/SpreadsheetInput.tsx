@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useMemo } from 'react';
+import { useCallback, useEffect, useMemo, useRef } from 'react';
 import { Workbook } from '@fortune-sheet/react';
 import '@fortune-sheet/react/dist/index.css';
 import { toast } from 'sonner';
@@ -12,6 +12,8 @@ const blank2 = (): Input2Row => ({ id: createRowId(), no: '', tanggal_spm: '', n
 
 export function SpreadsheetInput({ kind, rows }: { kind: Kind; rows: Row[] }) {
   const columns = kind === 'input_1' ? INPUT1_COLUMNS : INPUT2_COLUMNS;
+  const baseline = useRef<string[][]>([]);
+  const documentNumberColumns = columns.map((column, index) => ['nomor_spp','nomor_spm','nomor_sp2d'].includes(String(column.key)) ? index : -1).filter(index => index >= 0);
   const sheetData = useMemo(() => {
     const header = columns.map((column, c) => ({ r: 0, c, v: { v: column.label, m: column.label, ct: { fa: '@', t: 's' } } }));
     const cells = rows.map((row, r) => columns.map((column, c) => {
@@ -21,19 +23,36 @@ export function SpreadsheetInput({ kind, rows }: { kind: Kind; rows: Row[] }) {
       const text = isDocumentNumber || value == null ? String(value ?? '') : value;
       return { r: r + 1, c, v: { v: text, m: String(text), ct: { fa: isDocumentNumber ? '@' : 'General', t: isDocumentNumber ? 's' : 'g' }, ...(isKey ? { bg: '#f3e8ff', fc: '#7e22ce' } : {}) } };
     })).flat();
-    return [{ name: kind === 'input_1' ? 'Input 1' : 'Input 2', celldata: [...header, ...cells], row: Math.max(rows.length + 30, 100), column: columns.length, config: { columnlen: Object.fromEntries(columns.map((_, i) => [i, 150])) } }];
-  }, [columns, kind, rows]);
+    // Seed text-formatted blank cells in document-number columns. This gives newly
+    // pasted rows a text format before the user enters long IDs or leading zeroes.
+    const textFormatCells = Array.from({ length: Math.max(100, rows.length + 30) }, (_, r) =>
+      documentNumberColumns.map(c => ({ r: r + 1, c, v: { v: '', m: '', ct: { fa: '@', t: 's' }, ...(columns[c].key === 'nomor_spm' ? { bg: '#f3e8ff', fc: '#7e22ce' } : {}) } }))
+    ).flat().filter(cell => !cells.some(existing => existing.r === cell.r && existing.c === cell.c));
+    return [{ name: kind === 'input_1' ? 'Input 1' : 'Input 2', celldata: [...header, ...cells, ...textFormatCells], row: Math.max(rows.length + 30, 100), column: columns.length, config: { columnlen: Object.fromEntries(columns.map((_, i) => [i, 150])) }];
+  }, [columns, documentNumberColumns, kind, rows]);
+
+  useEffect(() => {
+    baseline.current = rows.map(row => columns.map(column => String((row as any)[column.key] ?? '')));
+  }, [columns, rows]);
 
   const onChange = useCallback((data: any[]) => {
     const sheet = data?.[0];
     if (!sheet?.celldata) return;
     const matrix: Record<number, Record<number, any>> = {};
-    sheet.celldata.forEach((cell: any) => { if (cell.r > 0) (matrix[cell.r] ??= {})[cell.c] = cell.v?.v ?? cell.v?.m ?? ''; });
-    const entries = Object.entries(matrix).filter(([, cells]) => Object.values(cells).some(value => String(value ?? '').trim() !== ''));
-    const source = rows as Row[];
-    void Promise.all(entries.map(async ([index, cells]) => {
+    sheet.celldata.forEach((cell: any) => {
+      if (cell.r > 0) (matrix[cell.r] ??= {})[cell.c] = cell.v?.v ?? cell.v?.m ?? '';
+    });
+    const changedRows = Object.entries(matrix).filter(([index, cells]) => {
+      const rowIndex = Number(index) - 1;
+      const current = columns.map((column, c) => String(cells[c] ?? ''));
+      const previous = baseline.current[rowIndex] ?? columns.map(() => '');
+      return current.some((value, c) => value !== previous[c]);
+    });
+    if (!changedRows.length) return;
+    void Promise.all(changedRows.map(async ([index, cells]) => {
+      const rowIndex = Number(index) - 1;
+      const existing = rows[rowIndex];
       const row = (kind === 'input_1' ? blank1() : blank2()) as Row;
-      const existing = source[Number(index) - 1];
       row.id = existing?.id ?? row.id;
       columns.forEach((column, c) => {
         const raw = cells[c] ?? '';
@@ -42,14 +61,13 @@ export function SpreadsheetInput({ kind, rows }: { kind: Kind; rows: Row[] }) {
           const normalized = String(raw).replace(/[\sRp.]/g, '').replace(/,/g, '.');
           (row as any)[key] = normalized === '' ? null : Number(normalized);
         } else {
-          // Nomor dokumen sengaja disimpan sebagai string, termasuk nol di depan.
           (row as any)[key] = String(raw ?? '');
         }
       });
+      baseline.current[rowIndex] = columns.map(column => String((row as any)[column.key] ?? ''));
       await saveRow(kind, row);
-    })).then(() => toast.success('Perubahan spreadsheet tersimpan')).catch(() => toast.error('Gagal menyimpan. Periksa koneksi Firebase.'));
+    })).then(() => toast.success('Perubahan tersimpan')).catch(() => toast.error('Gagal menyimpan. Periksa koneksi Firebase.'));
   }, [columns, kind, rows]);
 
-  useEffect(() => { /* realtime snapshot updates the workbook source */ }, [rows]);
   return <div className="fortune-wrap"><Workbook data={sheetData as any} onChange={onChange} showToolbar showFormulaBar showSheetTabs={false} /></div>;
 }
