@@ -21,9 +21,9 @@ export function SpreadsheetInput({kind,rows,input2Rows=[],onRowsChange,onActiveR
  const sheetData=useMemo(()=>{
   const cells:any[]=[];
   const put=(r:number,c:number,value:any,style:Record<string,any>={})=>cells.push({r,c,v:{v:value,m:String(value??''),...style}});
-  const title=(size=9)=>({bg:'#FFFFFF',fc:'#111111',bl:1,br:1,bt:1,bb:1,fs:size,ff:'Tahoma',ht:1,vt:1,tb:1});
-  const group=(bg:string)=>({bg,fc:'#111111',bl:1,br:1,bt:1,bb:1,fs:9,ff:'Tahoma',ht:1,vt:1,tb:1});
-  const header=(bg:string)=>({bg,fc:'#111111',bl:1,br:1,bt:1,bb:1,fs:9,ff:'Tahoma',ht:1,vt:1,tb:1});
+  const title=(size=9)=>({bg:'#FFFFFF',fc:'#111111',bl:1,fs:size,ff:'Tahoma',ht:0,vt:0,tb:2});
+  const group=(bg:string)=>({bg,fc:'#111111',bl:1,fs:9,ff:'Tahoma',ht:0,vt:0,tb:2});
+  const header=(bg:string)=>({bg,fc:'#111111',bl:1,fs:9,ff:'Tahoma',ht:0,vt:0,tb:2});
   let merge:Record<string,any>={};
   let rowlen:Record<string,number>={};
   const widths:number[]=[];
@@ -60,7 +60,7 @@ export function SpreadsheetInput({kind,rows,input2Rows=[],onRowsChange,onActiveR
     if(c===7)put(5,c,'Nilai (Rp)',header('#FCE4D6'));
     else if(c!==8)put(5,c,col.label,header(input2Fills[c]));
     if(c===7)put(6,c,'Bruto',header('#FCE4D6'));
-    if(c===8)put(6,c,'Bulan ',header('#FCE4D6'));
+    if(c===8)put(5,c,'Bulan ',header('#FCE4D6'));
    });
    merge={'0_0':{r:0,c:0,rs:1,cs:8},'1_0':{r:1,c:0,rs:1,cs:8},'2_0':{r:2,c:0,rs:1,cs:8},'3_0':{r:3,c:0,rs:1,cs:8},'5_0':{r:5,c:0,rs:2,cs:1},'5_1':{r:5,c:1,rs:2,cs:1},'5_2':{r:5,c:2,rs:2,cs:1},'5_3':{r:5,c:3,rs:2,cs:1},'5_4':{r:5,c:4,rs:2,cs:1},'5_5':{r:5,c:5,rs:2,cs:1},'5_6':{r:5,c:6,rs:2,cs:1},'5_8':{r:5,c:8,rs:2,cs:1}};
    rowlen={'0':16,'1':16,'2':16,'3':16,'4':8,'5':30,'6':20};
@@ -82,7 +82,7 @@ export function SpreadsheetInput({kind,rows,input2Rows=[],onRowsChange,onActiveR
    name:isOne?'Input 1':'Input 2',index:isOne?'input1':'input2',status:1,order:0,
    row:dataStart+formattedRows,column:columns.length,defaultRowHeight:isOne?24:25.5,defaultColWidth:110,
    celldata:cells,showGridLines:1,
-   config:{merge,rowlen,columnlen:Object.fromEntries(widths.map((width,index)=>[index,width]))}
+   config:{merge,rowlen,columnlen:Object.fromEntries(widths.map((width,index)=>[index,width])),borderInfo:[{rangeType:'range',borderType:'border-all',style:'1',color:'#000000',range:[{row:isOne?[4,5]:[5,6],column:isOne?[0,10]:[0,8]}]}]}
   }];
  },[columns,dataStart,input2Keys,isOne,rows]);
 
