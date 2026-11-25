@@ -88,6 +88,6 @@ export default function SpreadsheetPage({ kind, rows, input2Rows = [] }: { kind:
       <span className="row-count">{rows.length} baris</span>
       <button className="secondary-button" onClick={downloadCsv}><Download size={15}/> Export CSV</button>
     </div>
-    <div className="sheet-grid-frame"><SpreadsheetInput kind={kind} rows={rows}/></div>
+    <div className="sheet-grid-frame"><SpreadsheetInput kind={kind} rows={rows} input2Rows={input2Rows}/></div>
   </section>;
 }
