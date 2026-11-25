@@ -54,9 +54,9 @@ export function SpreadsheetInput({kind,rows,input2Rows=[],onRowsChange}:{kind:Ki
     else if(c!==8)put(5,c,col.label,header(input2Fills[c]));
     if(c===8)put(6,c,'Bulan',header('#FCE4D6'));
     else if(c===7)put(6,c,'Bruto',header('#FCE4D6'));
-    else put(6,c,col.label,header(input2Fills[c]));
+    else put(6,c,'',header(input2Fills[c]));
    });
-   merge={'0_0':{r:0,c:0,rs:1,cs:9},'1_0':{r:1,c:0,rs:1,cs:9},'2_0':{r:2,c:0,rs:1,cs:9},'3_0':{r:3,c:0,rs:1,cs:9},'5_7':{r:5,c:7,rs:1,cs:1}};
+   merge={'0_0':{r:0,c:0,rs:1,cs:9},'1_0':{r:1,c:0,rs:1,cs:9},'2_0':{r:2,c:0,rs:1,cs:9},'3_0':{r:3,c:0,rs:1,cs:9},'5_0':{r:5,c:0,rs:2,cs:1},'5_1':{r:5,c:1,rs:2,cs:1},'5_2':{r:5,c:2,rs:2,cs:1},'5_3':{r:5,c:3,rs:2,cs:1},'5_4':{r:5,c:4,rs:2,cs:1},'5_5':{r:5,c:5,rs:2,cs:1},'5_6':{r:5,c:6,rs:2,cs:1},'5_8':{r:5,c:8,rs:2,cs:1}};
    rowlen={'0':26,'1':23,'2':23,'3':23,'4':10,'5':25,'6':28};
    widths.push(55,130,220,180,220,360,130,150,100);
   }
