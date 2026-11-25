@@ -133,3 +133,20 @@
 .sheet-route .sheet-toolbar{overflow:visible;position:relative;z-index:15}
 .sheet-grid-frame,.fortune-wrap{position:relative;z-index:1}
 @media(max-width:950px){.spm-top-picker{order:5;flex:1 1 100%;width:100%;max-width:none}.sheet-toolbar{min-height:96px}}
+
+/* Insert selected Input 2 primary key into the active Input 1 cell */
+.spm-insert-wrap{position:relative;display:flex;align-items:center;flex:0 0 auto}
+.spm-insert-button{height:34px!important;background:#fff;border-color:#c4b5fd!important;color:#6d28d9!important}
+.spm-insert-button:hover{background:#f5f3ff!important}
+.spm-insert-menu{position:absolute;z-index:1000;top:calc(100% + 7px);left:0;width:min(460px,calc(100vw - 100px));background:#fff;border:1px solid #d8dce5;border-radius:8px;box-shadow:0 16px 38px rgba(15,23,42,.18);overflow:hidden;white-space:normal}
+.spm-insert-search{height:39px;display:flex;align-items:center;gap:8px;padding:0 11px;color:#7c3aed;border-bottom:1px solid #eef0f4}
+.spm-insert-search input{width:100%;min-width:0;border:0;outline:0;background:transparent;font-size:11px;color:#334155}
+.spm-insert-list{max-height:320px;overflow:auto}
+.spm-insert-list button{width:100%;display:grid;gap:4px;padding:10px 12px;text-align:left;background:#fff;border:0;border-bottom:1px solid #f1f5f9;color:#334155}
+.spm-insert-list button:hover{background:#faf5ff}
+.spm-insert-list strong{font-size:11px;font-weight:650;overflow-wrap:anywhere;color:#581c87}
+.spm-insert-list span,.spm-insert-list p{font-size:10px;color:#64748b;margin:0;line-height:1.45}
+.spm-insert-list p{padding:14px}
+.sheet-toolbar{position:relative;z-index:20;overflow:visible}
+.sheet-grid-frame{position:relative;z-index:1}
+@media(max-width:700px){.spm-insert-menu{left:auto;right:0;width:min(430px,calc(100vw - 82px))}}
