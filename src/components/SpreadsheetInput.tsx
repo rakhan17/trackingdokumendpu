@@ -10,7 +10,7 @@ type Row=Input1Row|Input2Row;
 const blank1=():Input1Row=>({id:createRowId(),no:'',nomor_spp:'',tanggal_spp:'',nilai_spp:null,nomor_spm:'',tanggal_spm:'',nilai_spm:null,nomor_sp2d:'',tanggal_sp2d:'',nilai_sp2d:null,bulan:''});
 const blank2=():Input2Row=>({id:createRowId(),no:'',tanggal_spm:'',nomor_spm:'',unit_skpd:'',nama_penerima:'',keterangan:'',jenis_spm:'',nilai_bruto:null,bulan:''});
 
-export function SpreadsheetInput({kind,rows,input2Rows=[],onRowsChange,onActiveRowChange}:{kind:Kind;rows:Row[];input2Rows?:Input2Row[];onRowsChange:(rows:Row[])=>void;onActiveRowChange?:(id:string)=>void}){
+export function SpreadsheetInput({kind,rows,input2Rows=[],onRowsChange,onActiveRowChange}:{kind:Kind;rows:Row[];input2Rows?:Input2Row[];onRowsChange:(rows:Row[])=>void;onActiveRowChange?:(id:string,insertValue?:((value:string)=>void))=>void}){
  const isOne=kind==='input_1';
  const columns=isOne?INPUT1_COLUMNS:INPUT2_COLUMNS;
  const dataStart=isOne?6:7;
@@ -32,6 +32,8 @@ export function SpreadsheetInput({kind,rows,input2Rows=[],onRowsChange,onActiveR
    put(1,0,'SKPD: DINAS PEKERJAAN UMUM',{...title(9)});
    put(2,0,'Periode: 1 Januari 2026 s.d. 31 Oktober 2026',{...title(9)});
    put(4,0,'NO',group('#BFBFBF'));
+   put(5,0,'',header('#BFBFBF'));
+   put(5,10,'',header('#00B0F0'));
    for(let col=1;col<=3;col++)put(4,col,'',group('#FFFF00'));
    for(let col=4;col<=6;col++)put(4,col,'',group('#92D050'));
    for(let col=7;col<=9;col++)put(4,col,'',group('#00B0F0'));
@@ -60,7 +62,7 @@ export function SpreadsheetInput({kind,rows,input2Rows=[],onRowsChange,onActiveR
     if(c===7)put(6,c,'Bruto',header('#FCE4D6'));
     if(c===8)put(6,c,'Bulan ',header('#FCE4D6'));
    });
-   merge={'0_0':{r:0,c:0,rs:1,cs:8},'1_0':{r:1,c:0,rs:1,cs:8},'2_0':{r:2,c:0,rs:1,cs:8},'3_0':{r:3,c:0,rs:1,cs:8},'5_0':{r:5,c:0,rs:2,cs:1},'5_1':{r:5,c:1,rs:2,cs:1},'5_2':{r:5,c:2,rs:2,cs:1},'5_3':{r:5,c:3,rs:2,cs:1},'5_4':{r:5,c:4,rs:2,cs:1},'5_5':{r:5,c:5,rs:2,cs:1},'5_6':{r:5,c:6,rs:2,cs:1},'5_7':{r:5,c:7,rs:1,cs:1}};
+   merge={'0_0':{r:0,c:0,rs:1,cs:8},'1_0':{r:1,c:0,rs:1,cs:8},'2_0':{r:2,c:0,rs:1,cs:8},'3_0':{r:3,c:0,rs:1,cs:8},'5_0':{r:5,c:0,rs:2,cs:1},'5_1':{r:5,c:1,rs:2,cs:1},'5_2':{r:5,c:2,rs:2,cs:1},'5_3':{r:5,c:3,rs:2,cs:1},'5_4':{r:5,c:4,rs:2,cs:1},'5_5':{r:5,c:5,rs:2,cs:1},'5_6':{r:5,c:6,rs:2,cs:1}};
    rowlen={'0':16,'1':16,'2':16,'3':16,'4':8,'5':30,'6':20};
    widths.push(41,104,321,160,91,356,90,132,91);
   }
@@ -94,8 +96,10 @@ export function SpreadsheetInput({kind,rows,input2Rows=[],onRowsChange,onActiveR
     const row=active?.row?.[0]; const col=active?.column?.[0];
     const keyCol=columns.findIndex(column=>column.key==='nomor_spm');
     if(isOne && col===keyCol && typeof row==='number' && row>=dataStart){
-     const target=rows[row-dataStart]; if(target) onActiveRowChange?.(target.id);
-    }
+     const target=rows[row-dataStart];
+     if(target) onActiveRowChange?.(target.id, (value:string)=>workbookRef.current?.setCellValue(row,keyCol,value));
+     else onActiveRowChange?.('',undefined);
+    }else if(isOne){onActiveRowChange?.('',undefined);}
    }catch(error){console.error('Unable to read active spreadsheet cell',error);}
   });
  },[columns,dataStart,isOne,onActiveRowChange,rows]);
