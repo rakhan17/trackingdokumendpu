@@ -85,13 +85,15 @@ export function SpreadsheetInput({kind,rows,input2Rows=[],onRowsChange,onActiveR
 
  const onGridClick=useCallback(()=>{
   requestAnimationFrame(()=>{
-   const selection=workbookRef.current?.getSelection?.();
-   const active=Array.isArray(selection)?selection[0]:null;
-   const row=active?.row?.[0]; const col=active?.column?.[0];
-   const keyCol=columns.findIndex(column=>column.key==='nomor_spm');
-   if(isOne && col===keyCol && typeof row==='number' && row>=dataStart){
-    const target=rows[row-dataStart]; if(target) onActiveRowChange?.(target.id);
-   }
+   try{
+    const selection=workbookRef.current?.getSelection?.();
+    const active=Array.isArray(selection)?selection[0]:null;
+    const row=active?.row?.[0]; const col=active?.column?.[0];
+    const keyCol=columns.findIndex(column=>column.key==='nomor_spm');
+    if(isOne && col===keyCol && typeof row==='number' && row>=dataStart){
+     const target=rows[row-dataStart]; if(target) onActiveRowChange?.(target.id);
+    }
+   }catch(error){console.error('Unable to read active spreadsheet cell',error);}
   });
  },[columns,dataStart,isOne,onActiveRowChange,rows]);
 
