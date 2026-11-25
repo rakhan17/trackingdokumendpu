@@ -58,7 +58,7 @@ export function SpreadsheetInput({kind,rows,input2Rows=[],onRowsChange,onActiveR
    const input2Fills=['#FCE4D6','#FCE4D6','#FCE4D6','#FCE4D6','#FCE4D6','#FCE4D6','#FCE4D6','#FCE4D6','#FCE4D6'];
    columns.forEach((col,c)=>{
     if(c===7)put(5,c,'Nilai (Rp)',header('#FCE4D6'));
-    else if(c!==8)put(5,c,col.label,header(input2Fills[c]));
+    else if(c!==8)put(5,c,col.label,header(col.key==='nomor_spm'?'#E739DF':input2Fills[c]));
     if(c===7)put(6,c,'Bruto',header('#FCE4D6'));
     if(c===8)put(5,c,'Bulan ',header('#FCE4D6'));
    });
