@@ -46,7 +46,7 @@ function InputRoute({kind}:{kind:'input_1'|'input_2'}) {
     if (kind !== 'input_1') return;
     return onSnapshot(collection(db,'input_2'),s=>setInput2Rows(s.docs.map(d=>({...d.data(),id:d.id} as Input2Row))),e=>toast.error('Gagal memuat daftar Nomor SPM: '+e.message));
   },[kind]);
-  return <SpreadsheetPage kind={kind} rows={rows} input2Rows={input2Rows}/>;
+  return <SpreadsheetPage key={kind} kind={kind} rows={rows} input2Rows={input2Rows}/>;
 }
 function OutputRoute() {
   const [a,setA]=useState<Input1Row[]>([]); const [b,setB]=useState<Input2Row[]>([]);
