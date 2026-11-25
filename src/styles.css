@@ -76,7 +76,6 @@
  .sheet-route .sheet-toolbar{flex-wrap:wrap;min-height:88px;gap:6px;padding:6px}
  .spm-picker{grid-template-columns:1fr;flex:1 1 100%;order:3}
  .spm-picker label{display:none}
- .spm-picker select{display:none}
  .picker-hint{grid-column:1}
  .sheet-toolbar .row-count{margin-left:auto}
  .sheet-route .page-content{height:100dvh}
