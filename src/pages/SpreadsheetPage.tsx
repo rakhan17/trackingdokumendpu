@@ -57,6 +57,12 @@ export default function SpreadsheetPage({ kind, rows, input2Rows = [] }: { kind:
   },[dirty,saving,draftRows,deletedIds,kind]);
 
   useEffect(()=>{
+    const warn=(event:BeforeUnloadEvent)=>{if(dirty){event.preventDefault();event.returnValue='';}};
+    window.addEventListener('beforeunload',warn);
+    return()=>window.removeEventListener('beforeunload',warn);
+  },[dirty]);
+
+  useEffect(()=>{
     const onKey=(event:KeyboardEvent)=>{
       if((event.metaKey||event.ctrlKey)&&event.key.toLowerCase()==='s'){
         event.preventDefault();void saveDraft();
