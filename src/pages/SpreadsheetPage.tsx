@@ -1,10 +1,10 @@
-import { useMemo, useState } from 'react';
-import { Download, Search, Plus, ChevronDown } from 'lucide-react';
+import { useCallback, useEffect, useMemo, useState } from 'react';
+import { Download, Plus, Trash2, Save, CloudUpload, CheckCircle2, AlertCircle } from 'lucide-react';
 import { toast } from 'sonner';
 import { SpreadsheetInput } from '../components/SpreadsheetInput';
 import type { Input1Row, Input2Row } from '../types';
 import { INPUT1_COLUMNS, INPUT2_COLUMNS } from '../types';
-import { createRowId, saveRow } from '../lib/firestoreService';
+import { createRowId, saveRow, removeRow } from '../lib/firestoreService';
 
 type Kind = 'input_1' | 'input_2';
 type Row = Input1Row | Input2Row;
@@ -12,82 +12,82 @@ type Row = Input1Row | Input2Row;
 export default function SpreadsheetPage({ kind, rows, input2Rows = [] }: { kind: Kind; rows: Row[]; input2Rows?: Input2Row[] }) {
   const isOne = kind === 'input_1';
   const columns = isOne ? INPUT1_COLUMNS : INPUT2_COLUMNS;
-  const [targetId, setTargetId] = useState('');
-  const [keyQuery, setKeyQuery] = useState('');
-  const [pickerOpen, setPickerOpen] = useState(false);
-  const [savingKey, setSavingKey] = useState(false);
-  const selectedRow = rows.find(row => row.id === targetId);
-  const matches = useMemo(() => input2Rows.filter(row => row.nomor_spm.toLowerCase().includes(keyQuery.toLowerCase())).slice(0, 30), [input2Rows, keyQuery]);
+  const [draftRows,setDraftRows] = useState<Row[]>(rows);
+  const [deletedIds,setDeletedIds] = useState<string[]>([]);
+  const [dirty,setDirty] = useState(false);
+  const [saving,setSaving] = useState(false);
+  const [progress,setProgress] = useState(0);
+  const [selectedId,setSelectedId] = useState('');
+  const [syncedIds,setSyncedIds] = useState<string[]>([]);
 
-  async function assignSpm(option: Input2Row) {
-    if (!selectedRow || !isOne) return;
-    setSavingKey(true);
-    try {
-      const updated: Input1Row = {
-        ...(selectedRow as Input1Row),
-        nomor_spm: option.nomor_spm,
-        tanggal_spm: option.tanggal_spm,
-        nilai_spm: option.nilai_bruto,
-        bulan: option.bulan
-      };
-      await saveRow('input_1', updated);
-      setKeyQuery(option.nomor_spm);
-      setPickerOpen(false);
-      toast.success('Nomor SPM dan data terkait berhasil ditarik dari Input 2.');
-    } catch {
-      toast.error('Gagal mengambil Nomor SPM. Periksa koneksi Firebase.');
-    } finally {
-      setSavingKey(false);
-    }
+  useEffect(() => {
+    if (!dirty && !saving) setDraftRows(rows);
+  },[rows,dirty,saving]);
+
+  const selected = draftRows.find(row=>row.id===selectedId);
+  const markDraft = useCallback((next:Row[])=>{setDraftRows(next);setDirty(true);},[]);
+
+  function addRow(){
+    const id=createRowId();
+    const row:Row=isOne
+      ? {id,no:String(draftRows.length+1),nomor_spp:'',tanggal_spp:'',nilai_spp:null,nomor_spm:'',tanggal_spm:'',nilai_spm:null,nomor_sp2d:'',tanggal_sp2d:'',nilai_sp2d:null,bulan:''}
+      : {id,no:String(draftRows.length+1),tanggal_spm:'',nomor_spm:'',unit_skpd:'',nama_penerima:'',keterangan:'',jenis_spm:'',nilai_bruto:null,bulan:''};
+    markDraft([...draftRows,row]);setSelectedId(id);
   }
 
-  async function addInput1Row() {
-    const row: Input1Row = { id: createRowId(), no: String(rows.length + 1), nomor_spp: '', tanggal_spp: '', nilai_spp: null, nomor_spm: '', tanggal_spm: '', nilai_spm: null, nomor_sp2d: '', tanggal_sp2d: '', nilai_sp2d: null, bulan: '' };
-    try {
-      await saveRow('input_1', row);
-      setTargetId(row.id);
-      toast.success('Baris baru ditambahkan. Pilih Nomor SPM dari daftar Input 2.');
-    } catch {
-      toast.error('Gagal menambahkan baris.');
-    }
+  function deleteSelected(){
+    if(!selected){toast.error('Pilih baris yang ingin dihapus terlebih dahulu.');return;}
+    setDraftRows(current=>current.filter(row=>row.id!==selected.id));
+    if(rows.some(row=>row.id===selected.id)) setDeletedIds(current=>[...current,selected.id]);
+    setDirty(true);setSelectedId('');
   }
 
-  function downloadCsv() {
-    const csv = [columns.map(column => column.label), ...rows.map(row => columns.map(column => String((row as any)[column.key] ?? '')))]
-      .map(line => line.map(value => '"' + value.replace(/"/g, '""') + '"').join(',')).join('\r\n');
-    const blob = new Blob(['\ufeff' + csv], { type: 'text/csv;charset=utf-8;' });
-    const url = URL.createObjectURL(blob);
-    const anchor = document.createElement('a');
-    anchor.href = url; anchor.download = `${kind}.csv`; anchor.click(); URL.revokeObjectURL(url);
+  const saveDraft=useCallback(async()=>{
+    if(!dirty||saving)return;
+    setSaving(true);setProgress(5);
+    try{
+      const total=draftRows.length+deletedIds.length;
+      let done=0;
+      for(const row of draftRows){await saveRow(kind,row);done++;setProgress(Math.max(5,Math.round(done/Math.max(total,1)*100)));}
+      for(const id of deletedIds){await removeRow(kind,id);done++;setProgress(Math.round(done/Math.max(total,1)*100));}
+      setSyncedIds(draftRows.map(row=>row.id));setDeletedIds([]);setDirty(false);setProgress(100);
+      toast.success('Semua perubahan berhasil disimpan ke Firebase.');
+    }catch(error){toast.error('Penyimpanan gagal. Draft tetap tersimpan di halaman, coba lagi.');}
+    finally{setSaving(false);}
+  },[dirty,saving,draftRows,deletedIds,kind]);
+
+  useEffect(()=>{
+    const onKey=(event:KeyboardEvent)=>{
+      if((event.metaKey||event.ctrlKey)&&event.key.toLowerCase()==='s'){
+        event.preventDefault();void saveDraft();
+      }
+    };
+    window.addEventListener('keydown',onKey);
+    return()=>window.removeEventListener('keydown',onKey);
+  },[saveDraft]);
+
+  function downloadCsv(){
+    const csv=[columns.map(column=>column.label),...draftRows.map(row=>columns.map(column=>String((row as any)[column.key]??'')))]
+      .map(line=>line.map(value=>'"'+value.replace(/"/g,'""')+'"').join(',')).join('\r\n');
+    const url=URL.createObjectURL(new Blob(['\ufeff'+csv],{type:'text/csv;charset=utf-8;'}));
+    const a=document.createElement('a');a.href=url;a.download=kind+'.csv';a.click();URL.revokeObjectURL(url);
   }
 
   return <section className="sheet-workspace">
     <div className="sheet-toolbar no-print">
-      {isOne ? <>
-        <button className="secondary-button" onClick={addInput1Row}><Plus size={15}/> Tambah baris</button>
-        <div className="spm-picker">
-          <label htmlFor="spm-target">Baris tujuan</label>
-          <select id="spm-target" value={targetId} onChange={event => setTargetId(event.target.value)}>
-            <option value="">Pilih baris Input 1</option>
-            {rows.map((row, index) => <option key={row.id} value={row.id}>Baris {index + 1} · {row.no || 'Tanpa nomor'}</option>)}
-          </select>
-          <div className="spm-search-wrap">
-            <Search size={15}/>
-            <input value={keyQuery} onFocus={() => setPickerOpen(true)} onChange={event => { setKeyQuery(event.target.value); setPickerOpen(true); }} placeholder="Cari / pilih Nomor SPM dari Input 2..." />
-            <button type="button" aria-label="Buka daftar Nomor SPM" onClick={() => setPickerOpen(value => !value)}><ChevronDown size={15}/></button>
-            {pickerOpen && <div className="spm-options">
-              {matches.length ? matches.map(option => <button type="button" key={option.id} onClick={() => void assignSpm(option)} disabled={!selectedRow || savingKey}>
-                <strong>{option.nomor_spm}</strong>
-                <span>{option.tanggal_spm} · {option.jenis_spm} · {option.unit_skpd}</span>
-              </button>) : <p>{input2Rows.length ? 'Nomor SPM tidak ditemukan.' : 'Belum ada data Nomor SPM di Input 2.'}</p>}
-            </div>}
-          </div>
-          <span className="picker-hint">{selectedRow ? 'Pilih nomor untuk menarik tanggal, nilai, dan bulan.' : 'Pilih baris tujuan terlebih dahulu.'}</span>
-        </div>
-      </> : <div className="input2-toolbar-note">Input 2 · Register SPM · Sumber data Nomor SPM</div>}
-      <span className="row-count">{rows.length} baris</span>
+      <button className="secondary-button" onClick={addRow}><Plus size={15}/> Tambah baris</button>
+      <label className="row-selector">Baris aktif
+        <select value={selectedId} onChange={e=>setSelectedId(e.target.value)}>
+          <option value="">Pilih baris</option>
+          {draftRows.map((row,index)=><option key={row.id} value={row.id}>Baris {index+1} · {row.no||'Tanpa nomor'}</option>)}
+        </select>
+      </label>
+      <button className="secondary-button danger-button" onClick={deleteSelected}><Trash2 size={15}/> Hapus baris</button>
+      <span className="save-state">{saving?<><CloudUpload size={14}/> Mengunggah {progress}%</>:dirty?<><AlertCircle size={14}/> Belum disimpan</>:<><CheckCircle2 size={14}/> Tersimpan</>}</span>
       <button className="secondary-button" onClick={downloadCsv}><Download size={15}/> Export CSV</button>
+      <button className="primary-button save-button" onClick={()=>void saveDraft()} disabled={!dirty||saving}><Save size={15}/>{saving?'Menyimpan...':'Simpan · ⌘/Ctrl + S'}</button>
     </div>
-    <div className="sheet-grid-frame"><SpreadsheetInput kind={kind} rows={rows} input2Rows={input2Rows}/></div>
+    {saving&&<div className="upload-progress"><span style={{width:progress+'%'}}/></div>}
+    <div className="sheet-grid-frame"><SpreadsheetInput kind={kind} rows={draftRows} input2Rows={input2Rows} onRowsChange={markDraft}/></div>
   </section>;
 }
