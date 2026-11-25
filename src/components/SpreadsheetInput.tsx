@@ -23,12 +23,12 @@ export function SpreadsheetInput({kind,rows,input2Rows=[],onRowsChange,onActiveR
   const put=(r:number,c:number,value:any,style:Record<string,any>={})=>cells.push({r,c,v:{v:value,m:String(value??''),...style}});
   const title=(size=9)=>({bg:'#FFFFFF',fc:'#111111',bl:1,fs:size,ff:'Tahoma',ht:0,vt:0,tb:2});
   const group=(bg:string)=>({bg,fc:'#111111',bl:1,fs:9,ff:'Tahoma',ht:0,vt:0,tb:2});
-  const header=(bg:string)=>({bg,fc:'#111111',bl:1,fs:9,ff:'Tahoma',ht:0,vt:0,tb:2});
+  const header=(bg:string,size=9,ff='Tahoma')=>({bg,fc:'#111111',bl:1,fs:size,ff,ht:0,vt:0,tb:2});
   let merge:Record<string,any>={};
   let rowlen:Record<string,number>={};
   const widths:number[]=[];
   if(isOne){
-   put(0,0,'TRACKING DOKUMEN',{...title(9),ht:1,vt:1});
+   put(0,0,'TRACKING DOKUMEN',title(9));
    put(1,0,'SKPD: DINAS PEKERJAAN UMUM',{...title(9)});
    put(2,0,'Periode: 1 Januari 2026 s.d. 31 Oktober 2026',{...title(9)});
    put(4,0,'NO',group('#BFBFBF'));
@@ -49,7 +49,7 @@ export function SpreadsheetInput({kind,rows,input2Rows=[],onRowsChange,onActiveR
     '4_0':{r:4,c:0,rs:2,cs:1},'4_1':{r:4,c:1,rs:1,cs:3},'4_4':{r:4,c:4,rs:1,cs:3},'4_7':{r:4,c:7,rs:1,cs:3},'4_10':{r:4,c:10,rs:2,cs:1}
    };
    rowlen={'0':15,'1':15,'2':15,'3':8,'4':15,'5':15};
-   widths.push(28,343,107,97,343,107,97,343,107,97,68);
+   widths.push(33,348,112,102,348,112,102,348,112,102,73);
   }else{
    put(0,0,'PEMERINTAH KOTA BALIKPAPAN',{...title(12),ff:'Calibri'});
    put(1,0,'REGISTER SPM (TRANSAKSI)',{...title(12),ff:'Calibri'});
@@ -57,14 +57,14 @@ export function SpreadsheetInput({kind,rows,input2Rows=[],onRowsChange,onActiveR
    put(3,0,'PERIODE: 1 Januari 2026 s.d 31 OKTOBER  2026',{...title(12),ff:'Calibri'});
    const input2Fills=['#FCE4D6','#FCE4D6','#FCE4D6','#FCE4D6','#FCE4D6','#FCE4D6','#FCE4D6','#FCE4D6','#FCE4D6'];
    columns.forEach((col,c)=>{
-    if(c===7)put(5,c,'Nilai (Rp)',header('#FCE4D6'));
-    else if(c!==8)put(5,c,col.label,header(col.key==='nomor_spm'?'#E739DF':input2Fills[c]));
-    if(c===7)put(6,c,'Bruto',header('#FCE4D6'));
-    if(c===8)put(5,c,'Bulan ',header('#FCE4D6'));
+    if(c===7)put(5,c,'Nilai (Rp)',header('#FCE4D6',10,'Calibri'));
+    else if(c!==8)put(5,c,col.label,header(col.key==='nomor_spm'?'#E739DF':input2Fills[c],10,'Calibri'));
+    if(c===7)put(6,c,'Bruto',header('#FCE4D6',10,'Calibri'));
+    if(c===8)put(5,c,'Bulan ',header('#FCE4D6',10,'Calibri'));
    });
    merge={'0_0':{r:0,c:0,rs:1,cs:8},'1_0':{r:1,c:0,rs:1,cs:8},'2_0':{r:2,c:0,rs:1,cs:8},'3_0':{r:3,c:0,rs:1,cs:8},'5_0':{r:5,c:0,rs:2,cs:1},'5_1':{r:5,c:1,rs:2,cs:1},'5_2':{r:5,c:2,rs:2,cs:1},'5_3':{r:5,c:3,rs:2,cs:1},'5_4':{r:5,c:4,rs:2,cs:1},'5_5':{r:5,c:5,rs:2,cs:1},'5_6':{r:5,c:6,rs:2,cs:1},'5_8':{r:5,c:8,rs:2,cs:1}};
    rowlen={'0':16,'1':16,'2':16,'3':16,'4':8,'5':30,'6':20};
-   widths.push(41,104,321,160,91,356,90,132,91);
+   widths.push(46,109,326,165,96,361,95,137,96);
   }
   const dataCells=rows.flatMap((row,index)=>columns.map((col,c)=>{
    const value=(row as any)[col.key];
