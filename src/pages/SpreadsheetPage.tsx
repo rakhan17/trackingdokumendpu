@@ -1,5 +1,5 @@
-import { useCallback, useEffect, useMemo, useState } from 'react';
-import { Download, Plus, Trash2, Save, CloudUpload, CheckCircle2, AlertCircle, Search, ChevronDown } from 'lucide-react';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import { Download, Plus, Trash2, Save, CloudUpload, CheckCircle2, AlertCircle, Search } from 'lucide-react';
 import { toast } from 'sonner';
 import { SpreadsheetInput } from '../components/SpreadsheetInput';
 import type { Input1Row, Input2Row } from '../types';
@@ -18,8 +18,10 @@ export default function SpreadsheetPage({ kind, rows, input2Rows = [] }: { kind:
   const [saving,setSaving] = useState(false);
   const [progress,setProgress] = useState(0);
   const [selectedId,setSelectedId] = useState('');
+  const [activeSpmCell,setActiveSpmCell] = useState(false);
+  const [insertOpen,setInsertOpen] = useState(false);
   const [spmSearch,setSpmSearch] = useState('');
-  const [pickerOpen,setPickerOpen] = useState(false);
+  const insertValueRef=useRef<((value:string)=>void)|null>(null);
 
   useEffect(() => {
     if (!dirty && !saving) setDraftRows(rows);
@@ -27,11 +29,15 @@ export default function SpreadsheetPage({ kind, rows, input2Rows = [] }: { kind:
 
   const selected = draftRows.find(row=>row.id===selectedId);
   const spmMatches = input2Rows.filter(row=>String(row.nomor_spm||'').toLowerCase().includes(spmSearch.toLowerCase())).slice(0,50);
+  const handleActiveSpmCell=useCallback((id:string,insertValue?:((value:string)=>void))=>{
+    setSelectedId(id);setActiveSpmCell(Boolean(id));insertValueRef.current=insertValue??null;setInsertOpen(false);
+  },[]);
   function chooseSpm(option:Input2Row){
-    if(!selected || !isOne){toast.error('Klik sel Nomor SPM pada baris Input 1 terlebih dahulu.');return;}
+    if(!selected || !isOne || !activeSpmCell){toast.error('Klik sel Nomor SPM di Input 1 terlebih dahulu.');return;}
+    insertValueRef.current?.(option.nomor_spm);
     markDraft(draftRows.map(row=>row.id===selected.id?({...row,nomor_spm:option.nomor_spm,tanggal_spm:option.tanggal_spm,nilai_spm:option.nilai_bruto,bulan:option.bulan} as Row):row));
-    setSpmSearch(option.nomor_spm);setPickerOpen(false);
-    toast.success('Nomor SPM berhasil dipilih. Tekan shortcut save untuk menyimpan.');
+    setSpmSearch('');setInsertOpen(false);
+    toast.success('Nomor SPM dimasukkan ke sel yang dipilih. Tekan ⌘ + S / Ctrl + S untuk menyimpan.');
   }
   const markDraft = useCallback((next:Row[])=>{setDraftRows(next);setDirty(true);},[]);
 
@@ -40,14 +46,14 @@ export default function SpreadsheetPage({ kind, rows, input2Rows = [] }: { kind:
     const row:Row=isOne
       ? {id,no:String(draftRows.length+1),nomor_spp:'',tanggal_spp:'',nilai_spp:null,nomor_spm:'',tanggal_spm:'',nilai_spm:null,nomor_sp2d:'',tanggal_sp2d:'',nilai_sp2d:null,bulan:''}
       : {id,no:String(draftRows.length+1),tanggal_spm:'',nomor_spm:'',unit_skpd:'',nama_penerima:'',keterangan:'',jenis_spm:'',nilai_bruto:null,bulan:''};
-    markDraft([...draftRows,row]);setSelectedId(id);
+    markDraft([...draftRows,row]);setSelectedId(id);setActiveSpmCell(false);insertValueRef.current=null;setInsertOpen(false);
   }
 
   function deleteSelected(){
     if(!selected){toast.error('Pilih baris yang ingin dihapus terlebih dahulu.');return;}
     setDraftRows(current=>current.filter(row=>row.id!==selected.id));
     if(rows.some(row=>row.id===selected.id)) setDeletedIds(current=>[...current,selected.id]);
-    setDirty(true);setSelectedId('');
+    setDirty(true);setSelectedId('');setActiveSpmCell(false);insertValueRef.current=null;setInsertOpen(false);
   }
 
   const saveDraft=useCallback(async()=>{
@@ -58,7 +64,7 @@ export default function SpreadsheetPage({ kind, rows, input2Rows = [] }: { kind:
       let done=0;
       for(const row of draftRows){await saveRow(kind,row);done++;setProgress(Math.max(5,Math.round(done/Math.max(total,1)*100)));}
       for(const id of deletedIds){await removeRow(kind,id);done++;setProgress(Math.round(done/Math.max(total,1)*100));}
-      setSyncedIds(draftRows.map(row=>row.id));setDeletedIds([]);setDirty(false);setProgress(100);
+      setDeletedIds([]);setDirty(false);setProgress(100);
       toast.success('Semua perubahan berhasil disimpan ke Firebase.');
     }catch(error){toast.error('Penyimpanan gagal. Draft tetap tersimpan di halaman, coba lagi.');}
     finally{setSaving(false);}
@@ -90,13 +96,13 @@ export default function SpreadsheetPage({ kind, rows, input2Rows = [] }: { kind:
   return <section className="sheet-workspace">
     <div className="sheet-toolbar no-print">
       <button className="secondary-button" onClick={addRow}><Plus size={15}/> Tambah baris</button>
-      <div className="spm-top-picker"><div className="spm-picker-input"><Search size={14}/><input value={spmSearch} onFocus={()=>setPickerOpen(true)} onChange={e=>{setSpmSearch(e.target.value);setPickerOpen(true);}} placeholder={selected?'Cari Nomor SPM dari Input 2...':'Klik sel Nomor SPM dahulu'} disabled={!selected}/><button type="button" onClick={()=>setPickerOpen(v=>!v)} disabled={!selected}><ChevronDown size={14}/></button></div>{pickerOpen&&selected&&<div className="spm-picker-menu">{spmMatches.length?spmMatches.map(option=><button type="button" key={option.id} onClick={()=>chooseSpm(option)}><strong>{option.nomor_spm}</strong><span>{option.tanggal_spm} · {option.unit_skpd} · {option.nama_penerima}</span></button>):<p>Tidak ada Nomor SPM yang cocok.</p>}</div>}<small>{selected?'Baris aktif: '+(selected.no||selected.id):'Pilih sel di kolom Nomor SPM pada tabel.'}</small></div>
+{isOne&&activeSpmCell&&selected&&<div className="spm-insert-wrap"><button className="secondary-button spm-insert-button" type="button" onClick={()=>{setInsertOpen(value=>!value);setSpmSearch('');}}><Plus size={14}/> Insert</button>{insertOpen&&<div className="spm-insert-menu"><div className="spm-insert-search"><Search size={13}/><input autoFocus value={spmSearch} onChange={event=>setSpmSearch(event.target.value)} placeholder="Cari Nomor SPM..."/></div><div className="spm-insert-list">{spmMatches.length?spmMatches.map(option=><button type="button" key={option.id} onClick={()=>chooseSpm(option)}><strong>{option.nomor_spm}</strong><span>{option.tanggal_spm} · {option.unit_skpd} · {option.nama_penerima}</span></button>):<p>Tidak ada Nomor SPM yang cocok.</p>}</div></div>}</div>}
       <button className="secondary-button danger-button" onClick={deleteSelected}><Trash2 size={15}/> Hapus baris</button>
       <span className="save-state">{saving?<><CloudUpload size={14}/> Mengunggah {progress}%</>:dirty?<><AlertCircle size={14}/> Belum disimpan</>:<><CheckCircle2 size={14}/> Tersimpan</>}</span>
       <button className="secondary-button" onClick={downloadCsv}><Download size={15}/> Export CSV</button>
       <button className="primary-button save-button" onClick={()=>void saveDraft()} disabled={!dirty||saving}><Save size={15}/>{saving?'Menyimpan...':'Simpan · ⌘/Ctrl + S'}</button>
     </div>
     {saving&&<div className="upload-progress"><span style={{width:progress+'%'}}/></div>}
-    <div className="sheet-grid-frame"><SpreadsheetInput kind={kind} rows={draftRows} input2Rows={input2Rows} onRowsChange={markDraft} onActiveRowChange={setSelectedId}/></div>
+    <div className="sheet-grid-frame"><SpreadsheetInput kind={kind} rows={draftRows} input2Rows={input2Rows} onRowsChange={markDraft} onActiveRowChange={handleActiveSpmCell}/></div>
   </section>;
 }
