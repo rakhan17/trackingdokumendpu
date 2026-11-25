@@ -15,10 +15,11 @@ export function SpreadsheetInput({ kind, rows, demoOnly = false }: { kind: Kind;
  const baseline=useRef<string[][]>([]);
  const documentNumberColumns=columns.map((column,index)=>['nomor_spp','nomor_spm','nomor_sp2d'].includes(String(column.key))?index:-1).filter(index=>index>=0);
  const sheetData=useMemo(()=>{
-  const header=columns.map((column,c)=>({r:0,c,v:{v:column.label,m:column.label,ct:{fa:'@',t:'s'},...(column.key==='nomor_spm'?{bg:'#e9d5ff',fc:'#6b21a8'}:{})}}));
+  const groupColor=(key:string)=>['nomor_spp','tanggal_spp','nilai_spp'].includes(key)?'#fff2cc':['nomor_spm','tanggal_spm','nilai_spm'].includes(key)?'#e2f0d9':['nomor_sp2d','tanggal_sp2d','nilai_sp2d'].includes(key)?'#d9eaf7':'';
+  const header=columns.map((column,c)=>({r:0,c,v:{v:column.label,m:column.label,ct:{fa:'@',t:'s'},...(column.key==='nomor_spm'?{bg:'#e9d5ff',fc:'#6b21a8'}:groupColor(String(column.key))?{bg:groupColor(String(column.key)),fc:'#334155'}:{})}}));
   const cells=rows.map((row,r)=>columns.map((column,c)=>{
    const value=row[column.key as keyof Row];const isKey=column.key==='nomor_spm';const isDocumentNumber=['nomor_spp','nomor_spm','nomor_sp2d'].includes(String(column.key));const text=isDocumentNumber||value==null?String(value??''):value;
-   return {r:r+1,c,v:{v:text,m:String(text),ct:{fa:isDocumentNumber?'@':'General',t:isDocumentNumber?'s':'g'},...(isKey?{bg:'#f3e8ff',fc:'#6b21a8'}:{})}};
+   const band=groupColor(String(column.key));return {r:r+1,c,v:{v:text,m:String(text),ct:{fa:isDocumentNumber?'@':'General',t:isDocumentNumber?'s':'g'},...(isKey?{bg:'#f3e8ff',fc:'#6b21a8'}:band?{bg:band+'88',fc:'#334155'}:{})}};
   })).flat();
   const textFormatCells=Array.from({length:Math.max(100,rows.length+30)},(_,r)=>documentNumberColumns.map(c=>({r:r+1,c,v:{v:'',m:'',ct:{fa:'@',t:'s'},...(columns[c].key==='nomor_spm'?{bg:'#f3e8ff',fc:'#6b21a8'}:{})}}))).flat().filter(cell=>!cells.some(existing=>existing.r===cell.r&&existing.c===cell.c));
   return [{name:kind==='input_1'?'Input 1':'Input 2',celldata:[...header,...cells,...textFormatCells],row:Math.max(rows.length+30,100),column:columns.length,config:{columnlen:Object.fromEntries(columns.map((_,i)=>[i,kind==='input_1'?170:190]))}}];
