@@ -1,5 +1,5 @@
 import { useMemo, useState } from 'react';
-import { Download, Search, Plus, Check, ChevronDown } from 'lucide-react';
+import { Download, Search, Plus, ChevronDown } from 'lucide-react';
 import { toast } from 'sonner';
 import { SpreadsheetInput } from '../components/SpreadsheetInput';
 import type { Input1Row, Input2Row } from '../types';
