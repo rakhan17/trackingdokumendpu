@@ -21,7 +21,7 @@ export function SpreadsheetInput({kind,rows,input2Rows=[],onRowsChange,onActiveR
  const sheetData=useMemo(()=>{
   const cells:any[]=[];
   const put=(r:number,c:number,value:any,style:Record<string,any>={})=>cells.push({r,c,v:{v:value,m:String(value??''),...style}});
-  const title=(size=12)=>({bg:'#FFFFFF',fc:'#111111,',bl:1,fs:size,ht:1,vt:1});
+  const title=(size=12)=>({bg:'#FFFFFF',fc:'#111111',bl:1,fs:size,ht:1,vt:1});
   const group=(bg:string)=>({bg,fc:'#111111',bl:1,fs:10,ht:1,vt:1});
   const header=(bg:string)=>({bg,fc:'#111111',bl:1,fs:10,ht:1,vt:1});
   let merge:Record<string,any>={};
@@ -37,7 +37,7 @@ export function SpreadsheetInput({kind,rows,input2Rows=[],onRowsChange,onActiveR
    put(4,7,'Surat Perintah Pencairan Dana (SP2D)',group('#00B0F0'));
    put(4,10,'Bulan',group('#00B0F0'));
    const fills:Record<string,string>={no:'#D9E1F2',nomor_spp:'#FFFF00',tanggal_spp:'#FFFF00',nilai_spp:'#FFFF00',nomor_spm:'#E739DF',tanggal_spm:'#92D050',nilai_spm:'#92D050',nomor_sp2d:'#00B0F0',tanggal_sp2d:'#00B0F0',nilai_sp2d:'#00B0F0',bulan:'#00B0F0'};
-   columns.forEach((col,c)=>put(5,c,col.label,header(fills[String(col.key)]||'#FFFFFF')));
+   columns.forEach((col,c)=>{if(col.key!=='no'&&col.key!=='bulan')put(5,c,col.label,header(fills[String(col.key)]||'#FFFFFF'));});
    merge={
     '0_0':{r:0,c:0,rs:1,cs:11},'1_0':{r:1,c:0,rs:1,cs:11},'2_0':{r:2,c:0,rs:1,cs:11},
     '4_0':{r:4,c:0,rs:2,cs:1},'4_1':{r:4,c:1,rs:1,cs:3},'4_4':{r:4,c:4,rs:1,cs:3},'4_7':{r:4,c:7,rs:1,cs:3},'4_10':{r:4,c:10,rs:2,cs:1}
@@ -55,7 +55,7 @@ export function SpreadsheetInput({kind,rows,input2Rows=[],onRowsChange,onActiveR
     else if(c!==8)put(5,c,col.label,header(input2Fills[c]));
     if(c===8)put(6,c,'Bulan',header('#FCE4D6'));
     else if(c===7)put(6,c,'Bruto',header('#FCE4D6'));
-    else put(6,c,'',header(input2Fills[c]));
+    else if(c===7)put(6,c,'Bruto',header('#FCE4D6'));
    });
    merge={'0_0':{r:0,c:0,rs:1,cs:9},'1_0':{r:1,c:0,rs:1,cs:9},'2_0':{r:2,c:0,rs:1,cs:9},'3_0':{r:3,c:0,rs:1,cs:9},'5_0':{r:5,c:0,rs:2,cs:1},'5_1':{r:5,c:1,rs:2,cs:1},'5_2':{r:5,c:2,rs:2,cs:1},'5_3':{r:5,c:3,rs:2,cs:1},'5_4':{r:5,c:4,rs:2,cs:1},'5_5':{r:5,c:5,rs:2,cs:1},'5_6':{r:5,c:6,rs:2,cs:1},'5_8':{r:5,c:8,rs:2,cs:1}};
    rowlen={'0':26,'1':23,'2':23,'3':23,'4':10,'5':25,'6':28};
@@ -73,18 +73,10 @@ export function SpreadsheetInput({kind,rows,input2Rows=[],onRowsChange,onActiveR
   for(let r=dataStart;r<dataStart+formattedRows;r++)for(const c of numberCols){
    if(!dataCells.some(cell=>cell.r===r&&cell.c===c))cells.push({r,c,v:{v:'',m:'',ct:{fa:'@',t:'s'},...(isOne&&columns[c].key==='nomor_spm'?{bg:'#FCE7F9',fc:'#581C87'}:{})}});
   }
-  const keyColumn=isOne?columns.findIndex(col=>col.key==='nomor_spm'):-1;
-  const dataVerification:Record<string,any>={};
-  if(isOne&&input2Keys.length){
-   const options=input2Keys.map(value=>value.replace(/,/g,'，')).join(',');
-   for(let r=dataStart;r<dataStart+formattedRows;r++)dataVerification[`${r}_${keyColumn}`]={
-    type:'dropdown',type2:false,value1:options,value2:'',remote:false,prohibitInput:true,hintShow:true,hintText:'Pilih Nomor SPM yang terdaftar pada Input 2.'
-   };
-  }
   return [{
    name:isOne?'Input 1':'Input 2',index:isOne?'input1':'input2',status:1,order:0,
    row:dataStart+formattedRows,column:columns.length,defaultRowHeight:22,defaultColWidth:110,
-   celldata:cells,dataVerification,showGridLines:1,
+   celldata:cells,showGridLines:1,
    config:{merge,rowlen,columnlen:Object.fromEntries(widths.map((width,index)=>[index,width]))}
   }];
  },[columns,dataStart,input2Keys,isOne,rows]);
