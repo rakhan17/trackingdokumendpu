@@ -69,7 +69,7 @@ export function SpreadsheetInput({kind,rows,input2Rows=[],onRowsChange,onActiveR
   const dataCells=rows.flatMap((row,index)=>columns.map((col,c)=>{
    const value=(row as any)[col.key];
    const isNumber=['nomor_spp','nomor_spm','nomor_sp2d'].includes(String(col.key));
-   const linked=isOne&&col.key==='nomor_spm';
+   const linked=col.key==='nomor_spm';
    return {r:dataStart+index,c,v:{v:value==null?'':String(value),m:value==null?'':String(value),...(isNumber?{ct:{fa:'@',t:'s'}}:{}),...(linked?{bg:'#FCE7F9',fc:'#581C87'}:{})}};
   }));
   cells.push(...dataCells);
