@@ -13,7 +13,7 @@ const blank2=():Input2Row=>({id:createRowId(),no:'',tanggal_spm:'',nomor_spm:'',
 export function SpreadsheetInput({kind,rows,input2Rows=[],onRowsChange,onActiveRowChange}:{kind:Kind;rows:Row[];input2Rows?:Input2Row[];onRowsChange:(rows:Row[])=>void;onActiveRowChange?:(id:string,insertValue?:((value:string)=>void))=>void}){
  const isOne=kind==='input_1';
  const columns=isOne?INPUT1_COLUMNS:INPUT2_COLUMNS;
- const dataStart=isOne?6:7;
+ const dataStart=2;
  const baseline=useRef<string[][]>([]);
  const workbookRef=useRef<any>(null);
  const input2Keys=useMemo(()=>[...new Set(input2Rows.map(row=>String(row.nomor_spm||'').trim()).filter(Boolean))],[input2Rows]);
@@ -28,42 +28,48 @@ export function SpreadsheetInput({kind,rows,input2Rows=[],onRowsChange,onActiveR
   let rowlen:Record<string,number>={};
   const widths:number[]=[];
   if(isOne){
-   put(0,0,'TRACKING DOKUMEN',title(9));
-   put(1,0,'SKPD: DINAS PEKERJAAN UMUM',{...title(9)});
-   put(2,0,'Periode: 1 Januari 2026 s.d. 31 Oktober 2026',{...title(9)});
-   put(4,0,'NO',group('#BFBFBF'));
-   put(5,0,'',header('#BFBFBF'));
-   put(5,10,'',header('#00B0F0'));
-   for(let col=1;col<=3;col++)put(4,col,'',group('#FFFF00'));
-   for(let col=4;col<=6;col++)put(4,col,'',group('#92D050'));
-   for(let col=7;col<=9;col++)put(4,col,'',group('#00B0F0'));
-   put(4,10,'Bulan ',group('#00B0F0'));
-   put(4,1,'Surat Permintaan Pembayaran (SPP)',group('#FFFF00'));
-   put(4,4,'Surat Perintah Membayar (SPM)',group('#92D050'));
-   put(4,7,'Surat Perintah Pencairan Dana (SP2D)',group('#00B0F0'));
-
+   // Two clean header rows, exactly at the top of the sheet. No clipped title rows.
+   put(0,0,'NO',group('#BFBFBF'));
+   put(1,0,'',header('#BFBFBF'));
+   put(0,10,'Bulan',group('#00B0F0'));
+   put(1,10,'',header('#00B0F0'));
+   put(0,1,'Surat Permintaan Pembayaran (SPP)',group('#FFFF00'));
+   put(0,4,'Surat Perintah Membayar (SPM)',group('#92D050'));
+   put(0,7,'Surat Perintah Pencairan Dana (SP2D)',group('#00B0F0'));
+   for(let col=1;col<=3;col++)put(0,col,'',group('#FFFF00'));
+   for(let col=4;col<=6;col++)put(0,col,'',group('#92D050'));
+   for(let col=7;col<=9;col++)put(0,col,'',group('#00B0F0'));
    const fills:Record<string,string>={no:'#BFBFBF',nomor_spp:'#FFFF00',tanggal_spp:'#FFFF00',nilai_spp:'#FFFF00',nomor_spm:'#E739DF',tanggal_spm:'#92D050',nilai_spm:'#92D050',nomor_sp2d:'#00B0F0',tanggal_sp2d:'#00B0F0',nilai_sp2d:'#00B0F0',bulan:'#00B0F0'};
-   columns.forEach((col,c)=>{if(col.key!=='no'&&col.key!=='bulan')put(5,c,col.label,header(fills[String(col.key)]||'#FFFFFF'));});
+   columns.forEach((col,index)=>{if(col.key!=='no'&&col.key!=='bulan')put(1,index,col.label,header(fills[String(col.key)]||'#FFFFFF'));});
    merge={
-    '0_0':{r:0,c:0,rs:1,cs:10},'1_0':{r:1,c:0,rs:1,cs:10},'2_0':{r:2,c:0,rs:1,cs:10},
-    '4_0':{r:4,c:0,rs:2,cs:1},'4_1':{r:4,c:1,rs:1,cs:3},'4_4':{r:4,c:4,rs:1,cs:3},'4_7':{r:4,c:7,rs:1,cs:3},'4_10':{r:4,c:10,rs:2,cs:1}
+    '0_0':{r:0,c:0,rs:2,cs:1},
+    '0_1':{r:0,c:1,rs:1,cs:3},
+    '0_4':{r:0,c:4,rs:1,cs:3},
+    '0_7':{r:0,c:7,rs:1,cs:3},
+    '0_10':{r:0,c:10,rs:2,cs:1}
    };
-   rowlen={'0':15,'1':15,'2':15,'3':8,'4':15,'5':15};
+   rowlen={'0':30,'1':28};
    widths.push(33,348,112,102,348,112,102,348,112,102,73);
   }else{
-   put(0,0,'PEMERINTAH KOTA BALIKPAPAN',{...title(12),ff:'Calibri'});
-   put(1,0,'REGISTER SPM (TRANSAKSI)',{...title(12),ff:'Calibri'});
-   put(2,0,'SEMUA SKPD (KONSOLIDASI)',{...title(12),ff:'Calibri'});
-   put(3,0,'PERIODE: 1 Januari 2026 s.d 31 OKTOBER  2026',{...title(12),ff:'Calibri'});
-   const input2Fills=['#FCE4D6','#FCE4D6','#FCE4D6','#FCE4D6','#FCE4D6','#FCE4D6','#FCE4D6','#FCE4D6','#FCE4D6'];
-   columns.forEach((col,c)=>{
-    if(c===7)put(5,c,'Nilai (Rp)',header('#FCE4D6',10,'Calibri'));
-    else if(c!==8)put(5,c,col.label,header(col.key==='nomor_spm'?'#E739DF':input2Fills[c],10,'Calibri'));
-    if(c===7)put(6,c,'Bruto',header('#FCE4D6',10,'Calibri'));
-    if(c===8)put(5,c,'Bulan ',header('#FCE4D6',10,'Calibri'));
+   // Input 2 keeps its own register format and two-row Bruto header.
+   const fill='#FCE4D6';
+   columns.forEach((col,index)=>{
+    if(index===7)put(0,index,'Nilai (Rp)',header(fill,10,'Calibri'));
+    else if(index===8)put(0,index,'Bulan',header(fill,10,'Calibri'));
+    else put(0,index,col.label,header(col.key==='nomor_spm'?'#E739DF':fill,10,'Calibri'));
    });
-   merge={'0_0':{r:0,c:0,rs:1,cs:8},'1_0':{r:1,c:0,rs:1,cs:8},'2_0':{r:2,c:0,rs:1,cs:8},'3_0':{r:3,c:0,rs:1,cs:8},'5_0':{r:5,c:0,rs:2,cs:1},'5_1':{r:5,c:1,rs:2,cs:1},'5_2':{r:5,c:2,rs:2,cs:1},'5_3':{r:5,c:3,rs:2,cs:1},'5_4':{r:5,c:4,rs:2,cs:1},'5_5':{r:5,c:5,rs:2,cs:1},'5_6':{r:5,c:6,rs:2,cs:1},'5_8':{r:5,c:8,rs:2,cs:1}};
-   rowlen={'0':16,'1':16,'2':16,'3':16,'4':8,'5':30,'6':20};
+   put(1,7,'Bruto',header(fill,10,'Calibri'));
+   merge={
+    '0_0':{r:0,c:0,rs:2,cs:1},
+    '0_1':{r:0,c:1,rs:2,cs:1},
+    '0_2':{r:0,c:2,rs:2,cs:1},
+    '0_3':{r:0,c:3,rs:2,cs:1},
+    '0_4':{r:0,c:4,rs:2,cs:1},
+    '0_5':{r:0,c:5,rs:2,cs:1},
+    '0_6':{r:0,c:6,rs:2,cs:1},
+    '0_8':{r:0,c:8,rs:2,cs:1}
+   };
+   rowlen={'0':30,'1':28};
    widths.push(46,109,326,165,96,361,95,137,96);
   }
   const dataCells=rows.flatMap((row,index)=>columns.map((col,c)=>{
@@ -82,7 +88,7 @@ export function SpreadsheetInput({kind,rows,input2Rows=[],onRowsChange,onActiveR
    name:isOne?'Input 1':'Input 2',index:isOne?'input1':'input2',status:1,order:0,
    row:dataStart+formattedRows,column:columns.length,defaultRowHeight:isOne?24:25.5,defaultColWidth:110,
    celldata:cells,showGridLines:1,
-   config:{merge,rowlen,columnlen:Object.fromEntries(widths.map((width,index)=>[index,width])),borderInfo:[{rangeType:'range',borderType:'border-all',style:'1',color:'#000000',range:[{row:isOne?[4,5]:[5,6],column:isOne?[0,10]:[0,8]}]}]}
+   config:{merge,rowlen,columnlen:Object.fromEntries(widths.map((width,index)=>[index,width])),borderInfo:[{rangeType:'range',borderType:'border-all',style:'1',color:'#000000',range:[{row:[0,1],column:isOne?[0,10]:[0,8]}]}]}
   }];
  },[columns,dataStart,input2Keys,isOne,rows]);
 
