@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import { useCallback, useEffect, useState } from 'react';
 import { Download, Plus, Trash2, Save, CloudUpload, CheckCircle2, AlertCircle, Search } from 'lucide-react';
 import { toast } from 'sonner';
 import { SpreadsheetInput } from '../components/SpreadsheetInput';
