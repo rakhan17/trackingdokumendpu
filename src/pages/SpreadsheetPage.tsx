@@ -29,7 +29,7 @@ export default function SpreadsheetPage({ kind, rows, input2Rows = [] }: { kind:
   },[rows,dirty,saving]);
 
   const selected = draftRows.find(row=>row.id===selectedId);
-  const spmMatches = input2Rows.filter(row=>String(row.nomor_spm||'').toLowerCase().includes(spmSearch.toLowerCase())).slice(0,50);
+  const spmMatches = input2Rows.filter(row=>String(row.nomor_spm||'').toLowerCase().includes(spmSearch.toLowerCase()));
   const handleActiveSpmCell=useCallback((id:string,insertValue?:((value:string)=>void),isKeyCell=false)=>{
     if(!id){if(insertOpen)return;setSelectedId('');setActiveSpmCell(false);insertValueRef.current=null;setInsertOpen(false);return;}
     setSelectedId(id);setActiveSpmCell(isKeyCell);insertValueRef.current=isKeyCell?(insertValue??null):null;
