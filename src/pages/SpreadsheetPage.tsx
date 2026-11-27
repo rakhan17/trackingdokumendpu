@@ -21,6 +21,8 @@ export default function SpreadsheetPage({ kind, rows, input2Rows = [] }: { kind:
   const [activeSpmCell,setActiveSpmCell] = useState(false);
   const [insertOpen,setInsertOpen] = useState(false);
   const [spmSearch,setSpmSearch] = useState('');
+  const insertValueRef=useRef<((value:string)=>void)|null>(null);
+  const insertWrapRef=useRef<HTMLDivElement|null>(null);
 
   useEffect(() => {
     if (!dirty && !saving) setDraftRows(rows);
