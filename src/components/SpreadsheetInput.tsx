@@ -146,10 +146,19 @@ export function SpreadsheetInput({ kind, rows, input2Rows=[], onRowsChange, onAc
   const onChange = useCallback((workbookData:any[]) => {
     if(!mounted.current) return;
     const sheet=workbookData?.[0];
-    const source=sheet?.data;
+    let source=sheet?.data;
+    if(!Array.isArray(source) && Array.isArray(sheet?.celldata)) {
+      const maxRow=Math.max(dataStart, ...sheet.celldata.map((cell:any)=>Number(cell?.r??0)));
+      const maxCol=Math.max(columns.length-1, ...sheet.celldata.map((cell:any)=>Number(cell?.c??0)));
+      const matrix:any[][]=Array.from({length:maxRow+1},()=>Array(maxCol+1).fill(null));
+      sheet.celldata.forEach((cell:any)=>{
+        if(typeof cell?.r==='number'&&typeof cell?.c==='number') matrix[cell.r][cell.c]=cell.v;
+      });
+      source=matrix;
+    }
     if(!Array.isArray(source)) return;
 
-    const next=[...rows];
+    const next=[...latestSelection.current.rows] as Row[];
     let changed=false;
     source.forEach((line:any[],rowIndex:number) => {
       const index=rowIndex-dataStart;
@@ -192,7 +201,7 @@ export function SpreadsheetInput({ kind, rows, input2Rows=[], onRowsChange, onAc
       lastLocalSignature.current=JSON.stringify(next);
       onRowsChange(next);
     }
-  },[columns,dataStart,input2Rows,isOne,onRowsChange,rows]);
+  },[columns,dataStart,input2Rows,isOne,onRowsChange]);
 
   const changeHandlerRef=useRef(onChange);
   changeHandlerRef.current=onChange;
