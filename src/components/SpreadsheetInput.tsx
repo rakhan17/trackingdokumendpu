@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useMemo, useRef } from 'react';
+import { memo, useCallback, useEffect, useMemo, useRef } from 'react';
 import { Workbook, type WorkbookInstance } from '@fortune-sheet/react';
 import '@fortune-sheet/react/dist/index.css';
 import { toast } from 'sonner';
@@ -6,6 +6,7 @@ import { INPUT1_COLUMNS, INPUT2_COLUMNS, type Input1Row, type Input2Row } from '
 
 type Kind = 'input_1' | 'input_2';
 type Row = Input1Row | Input2Row;
+const StableWorkbook = memo(Workbook);
 
 export function SpreadsheetInput({ kind, rows, input2Rows=[], onRowsChange, onActiveRowChange }: {
   kind: Kind;
@@ -191,13 +192,18 @@ export function SpreadsheetInput({ kind, rows, input2Rows=[], onRowsChange, onAc
     }
   },[columns,dataStart,input2Rows,isOne,onRowsChange,rows]);
 
+  const changeHandlerRef=useRef(onChange);
+  changeHandlerRef.current=onChange;
+  const stableOnChange=useCallback((data:any[])=>changeHandlerRef.current(data),[]);
+  const hooks=useMemo(()=>({afterSelectionChange:onSelectionChange}),[onSelectionChange]);
+
   return <div className="fortune-wrap">
-    <Workbook
+    <StableWorkbook
       key={kind}
       ref={workbookRef}
       data={sheetData as any}
-      onChange={onChange}
-      hooks={{afterSelectionChange:onSelectionChange}}
+      onChange={stableOnChange}
+      hooks={hooks}
       showToolbar
       showFormulaBar
       showSheetTabs={false}
