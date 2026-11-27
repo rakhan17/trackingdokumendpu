@@ -13,7 +13,7 @@ export function SpreadsheetInput({ kind, rows, input2Rows=[], onRowsChange, onAc
   rows: Row[];
   input2Rows?: Input2Row[];
   onRowsChange: (rows: Row[]) => void;
-  onActiveRowChange?: (id: string, insertValue?: (value:string)=>void) => void;
+  onActiveRowChange?: (id: string, insertValue?: (value:string)=>void, isKeyCell?: boolean) => void;
 }) {
   const isOne = kind === 'input_1';
   const columns = isOne ? INPUT1_COLUMNS : INPUT2_COLUMNS;
@@ -134,10 +134,10 @@ export function SpreadsheetInput({ kind, rows, input2Rows=[], onRowsChange, onAc
     const keyColumn=current.columns.findIndex(column=>column.key==='nomor_spm');
     if(typeof row==='number'&&col===keyColumn&&row>=current.dataStart) {
       const target=current.rows[row-current.dataStart];
-      if(target)current.onActiveRowChange?.(target.id,(value:string)=>{
+      if(target)current.onActiveRowChange?.(target.id,col===keyColumn?(value:string)=>{
         allowedKeyChange.current=value;
         workbookRef.current?.setCellValue(row,keyColumn,value);
-      });
+      }:undefined,col===keyColumn);
     } else {
       current.onActiveRowChange?.('');
     }
