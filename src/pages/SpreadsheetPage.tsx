@@ -175,14 +175,27 @@ export default function SpreadsheetPage({ kind, rows, input2Rows = [] }: { kind:
       }
 
       baseRowsRef.current = currentRows;
-      draftRowsRef.current = currentRows;
-      deletedIdsRef.current = [];
-      dirtyRef.current = false;
-      setDeletedIds([]);
-      setDirty(false);
-      clearSessionDraft(kind);
       setProgress(100);
-      toast.success(`Berhasil menyimpan ${total} operasi ke Firebase.`);
+      // If the user continued editing while uploads were in flight, only mark
+      // the submitted snapshot as saved and retain the newer draft.
+      const latestRows = draftRowsRef.current;
+      const latestDeleted = deletedIdsRef.current;
+      const changedDuringSave = JSON.stringify(latestRows) !== JSON.stringify(currentRows)
+        || JSON.stringify(latestDeleted) !== JSON.stringify(currentDeleted);
+      if (changedDuringSave) {
+        dirtyRef.current = true;
+        setDirty(true);
+        setSessionDraft(kind, { rows: latestRows as DraftRow[], deletedIds: latestDeleted, dirty: true });
+        toast.success(`Firebase menyimpan ${total} operasi. Edit terbaru masih menjadi draft.`);
+      } else {
+        draftRowsRef.current = currentRows;
+        deletedIdsRef.current = [];
+        dirtyRef.current = false;
+        setDeletedIds([]);
+        setDirty(false);
+        clearSessionDraft(kind);
+        toast.success(`Berhasil menyimpan ${total} operasi ke Firebase.`);
+      }
     } catch (error) {
       const message = error instanceof Error ? error.message : String(error);
       toast.error(`Gagal menyimpan ke Firebase: ${message}`);
