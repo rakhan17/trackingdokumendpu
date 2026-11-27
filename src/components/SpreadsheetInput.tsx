@@ -29,8 +29,8 @@ export function SpreadsheetInput({ kind, rows, input2Rows=[], onRowsChange, onAc
   // type directly into blank spreadsheet rows without pressing Add row first.
   const worksheetRowToDraftIndex = useRef<Map<number,number>>(new Map());
   const [renderRows,setRenderRows] = useState<Row[]>(rows);
-  const latestSelection = useRef({isOne,columns,dataStart,rows,onActiveRowChange});
-  latestSelection.current={isOne,columns,dataStart,rows,onActiveRowChange};
+  const latestSelection = useRef({isOne,columns,dataStart,rows,onActiveRowChange,onRowsChange});
+  latestSelection.current={isOne,columns,dataStart,rows,onActiveRowChange,onRowsChange};
 
   useEffect(()=>{
     const signature=JSON.stringify(rows);
@@ -139,11 +139,20 @@ export function SpreadsheetInput({ kind, rows, input2Rows=[], onRowsChange, onAc
     const col=active?.column_focus??active?.column?.[0];
     const keyColumn=current.columns.findIndex(column=>column.key==='nomor_spm');
     if(typeof row==='number'&&col===keyColumn&&row>=current.dataStart) {
-      const target=current.rows[row-current.dataStart];
-      if(target)current.onActiveRowChange?.(target.id,col===keyColumn?(value:string)=>{
+      let target=current.rows[row-current.dataStart];
+      // Make an empty Input 1 row when the user selects its primary-key cell,
+      // so Insert is available even before using the separate Add row button.
+      if(!target) {
+        const newRow:Input1Row={id:createRowId(),no:String(current.rows.length+1),nomor_spp:'',tanggal_spp:'',nilai_spp:null,nomor_spm:'',tanggal_spm:'',nilai_spm:null,nomor_sp2d:'',tanggal_sp2d:'',nilai_sp2d:null,bulan:''};
+        target=newRow;
+        const next=[...current.rows,newRow];
+        worksheetRowToDraftIndex.current.set(row,next.length-1);
+        current.onRowsChange(next);
+      }
+      current.onActiveRowChange?.(target.id,(value:string)=>{
         allowedKeyChange.current=value;
         workbookRef.current?.setCellValue(row,keyColumn,value);
-      }:undefined,col===keyColumn);
+      },true);
     } else {
       current.onActiveRowChange?.('');
     }
