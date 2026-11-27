@@ -13,7 +13,7 @@ export function subscribeRows<T extends Row>(name: 'input_1' | 'input_2', onRows
   }, error => onError?.(error));
 }
 export async function saveRow(name: 'input_1' | 'input_2', row: Row): Promise<void> {
-  const { id, ...data } = row;
+  const { id, updatedAt: _updatedAt, ...data } = row as Row & { updatedAt?: number };
   const reference = doc(db, name, id);
   await setDoc(reference, { ...data, updatedAt: Date.now() }, { merge: true });
   // Confirm the write reached the server before the UI can report success.
