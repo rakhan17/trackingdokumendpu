@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useState } from 'react';
+import { useCallback, useEffect, useRef, useState } from 'react';
 import { Download, Plus, Trash2, Save, CloudUpload, CheckCircle2, AlertCircle, Search } from 'lucide-react';
 import { toast } from 'sonner';
 import { SpreadsheetInput } from '../components/SpreadsheetInput';
@@ -29,12 +29,12 @@ export default function SpreadsheetPage({ kind, rows, input2Rows = [] }: { kind:
   const selected = draftRows.find(row=>row.id===selectedId);
   const spmMatches = input2Rows.filter(row=>String(row.nomor_spm||'').toLowerCase().includes(spmSearch.toLowerCase())).slice(0,50);
   const handleActiveSpmCell=useCallback((id:string)=>{
-    if(!id){setSelectedId('');setActiveSpmCell(false);setInsertOpen(false);return;}
+    if(!id){setSelectedId('');setActiveSpmCell(false);if(!insertOpen)setInsertOpen(false);return;}
     setSelectedId(id);setActiveSpmCell(true);
     // FortuneSheet may emit selection callbacks while the toolbar opens. Keep the picker
     // open when the active key cell is still the same row.
     if(id!==selectedId)setInsertOpen(false);
-  },[selectedId]);
+  },[selectedId,insertOpen]);
   function chooseSpm(option:Input2Row){
     if(!selected || !isOne || !activeSpmCell){toast.error('Klik sel Nomor SPM di Input 1 terlebih dahulu.');return;}
     markDraft(draftRows.map(row=>row.id===selected.id?({...row,nomor_spm:option.nomor_spm,tanggal_spm:option.tanggal_spm,nilai_spm:option.nilai_bruto,bulan:option.bulan} as Row):row));
@@ -42,6 +42,15 @@ export default function SpreadsheetPage({ kind, rows, input2Rows = [] }: { kind:
     toast.success('Nomor SPM dimasukkan ke sel yang dipilih. Tekan ⌘ + S / Ctrl + S untuk menyimpan.');
   }
   const markDraft = useCallback((next:Row[])=>{setDraftRows(next);setDirty(true);},[]);
+
+  useEffect(()=>{
+    if(!insertOpen)return;
+    const closeOutside=(event:PointerEvent)=>{
+      if(!insertWrapRef.current?.contains(event.target as Node))setInsertOpen(false);
+    };
+    document.addEventListener('pointerdown',closeOutside);
+    return()=>document.removeEventListener('pointerdown',closeOutside);
+  },[insertOpen]);
 
   function addRow(){
     const id=createRowId();
@@ -98,7 +107,7 @@ export default function SpreadsheetPage({ kind, rows, input2Rows = [] }: { kind:
   return <section className="sheet-workspace">
     <div className="sheet-toolbar no-print">
       <button className="secondary-button" onClick={addRow}><Plus size={15}/> Tambah baris</button>
-{isOne&&activeSpmCell&&selected&&<div className="spm-insert-wrap"><button className="secondary-button spm-insert-button" type="button" onClick={()=>{setInsertOpen(value=>!value);setSpmSearch('');}}><Plus size={14}/> Insert</button>{insertOpen&&<div className="spm-insert-menu"><div className="spm-insert-search"><Search size={13}/><input autoFocus value={spmSearch} onChange={event=>setSpmSearch(event.target.value)} placeholder="Cari Nomor SPM..."/></div><div className="spm-insert-list">{spmMatches.length?spmMatches.map(option=><button type="button" key={option.id} onClick={()=>chooseSpm(option)}><strong>{option.nomor_spm}</strong><span>{option.tanggal_spm} · {option.unit_skpd} · {option.nama_penerima}</span></button>):<p>Tidak ada Nomor SPM yang cocok.</p>}</div></div>}</div>}
+{isOne&&activeSpmCell&&selected&&<div className="spm-insert-wrap" ref={insertWrapRef}><button className="secondary-button spm-insert-button" type="button" onClick={()=>{setInsertOpen(value=>!value);setSpmSearch('');}}><Plus size={14}/> Insert</button>{insertOpen&&<div className="spm-insert-menu"><div className="spm-insert-search"><Search size={13}/><input autoFocus value={spmSearch} onChange={event=>setSpmSearch(event.target.value)} placeholder="Cari Nomor SPM..."/></div><div className="spm-insert-list">{spmMatches.length?spmMatches.map(option=><button type="button" key={option.id} onClick={()=>chooseSpm(option)}><strong>{option.nomor_spm}</strong><span>{option.tanggal_spm} · {option.unit_skpd} · {option.nama_penerima}</span></button>):<p>Tidak ada Nomor SPM yang cocok.</p>}</div></div>}</div>}
       <button className="secondary-button danger-button" onClick={deleteSelected}><Trash2 size={15}/> Hapus baris</button>
       <span className="save-state">{saving?<><CloudUpload size={14}/> Mengunggah {progress}%</>:dirty?<><AlertCircle size={14}/> Belum disimpan</>:<><CheckCircle2 size={14}/> Tersimpan</>}</span>
       <button className="secondary-button" onClick={downloadCsv}><Download size={15}/> Export CSV</button>
