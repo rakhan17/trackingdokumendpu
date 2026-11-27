@@ -172,9 +172,13 @@ export function SpreadsheetInput({ kind, rows, input2Rows=[], onRowsChange, onAc
 
     source.forEach((line:any[],rowIndex:number) => {
       if(rowIndex<dataStart||!Array.isArray(line))return;
+      const currentDraftIndex=worksheetRowToDraftIndex.current.get(rowIndex);
+      const currentRow=currentDraftIndex===undefined?undefined:latestSelection.current.rows[currentDraftIndex];
       const values=columns.map((column,c)=>{
         const cell=line[c];
-        if(cell==null)return '';
+        // FortuneSheet can report a sparse matrix on edits. A missing cell means
+        // "not included in this change", not "erase the existing value".
+        if(cell==null)return currentRow?String((currentRow as any)[String(column.key)]??''):'';
         if(typeof cell==='object')return String(cell.v??cell.m??'');
         return String(cell);
       });
