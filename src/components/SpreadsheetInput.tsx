@@ -166,7 +166,7 @@ export function SpreadsheetInput({ kind, rows, input2Rows=[], onRowsChange, onAc
 
     const next=[...latestSelection.current.rows] as Row[];
     let changed=false;
-    const makeEmptyRow=(id:string,no:string):Row=>current.isOne
+    const makeEmptyRow=(id:string,no:string):Row=>isOne
       ? {id,no,nomor_spp:'',tanggal_spp:'',nilai_spp:null,nomor_spm:'',tanggal_spm:'',nilai_spm:null,nomor_sp2d:'',tanggal_sp2d:'',nilai_sp2d:null,bulan:''}
       : {id,no,tanggal_spm:'',nomor_spm:'',unit_skpd:'',nama_penerima:'',keterangan:'',jenis_spm:'',nilai_bruto:null,bulan:''};
 
