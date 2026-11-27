@@ -29,11 +29,16 @@ export function SpreadsheetInput({ kind, rows, input2Rows=[], onRowsChange, onAc
   // type directly into blank spreadsheet rows without pressing Add row first.
   const worksheetRowToDraftIndex = useRef<Map<number,number>>(new Map());
   const [renderRows,setRenderRows] = useState<Row[]>(rows);
+  // Keep an immediately updated draft ref. React props can lag behind a burst
+  // of spreadsheet callbacks (especially multi-row paste), so callbacks must
+  // never rebuild their next state from the last rendered props.
+  const liveRowsRef = useRef<Row[]>(rows);
   const latestSelection = useRef({isOne,columns,dataStart,rows,onActiveRowChange,onRowsChange});
-  latestSelection.current={isOne,columns,dataStart,rows,onActiveRowChange,onRowsChange};
+  latestSelection.current={isOne,columns,dataStart,rows:liveRowsRef.current,onActiveRowChange,onRowsChange};
 
   useEffect(()=>{
     const signature=JSON.stringify(rows);
+    liveRowsRef.current=rows;
     if(lastLocalSignature.current===signature){lastLocalSignature.current=null;return;}
     worksheetRowToDraftIndex.current.clear();
     rows.forEach((_row,index)=>worksheetRowToDraftIndex.current.set(dataStart+index,index));
@@ -173,7 +178,7 @@ export function SpreadsheetInput({ kind, rows, input2Rows=[], onRowsChange, onAc
     }
     if(!Array.isArray(source)) return;
 
-    const next=[...latestSelection.current.rows] as Row[];
+    const next=[...liveRowsRef.current] as Row[];
     let changed=false;
     const makeEmptyRow=(id:string,no:string):Row=>isOne
       ? {id,no,nomor_spp:'',tanggal_spp:'',nilai_spp:null,nomor_spm:'',tanggal_spm:'',nilai_spm:null,nomor_sp2d:'',tanggal_sp2d:'',nilai_sp2d:null,bulan:''}
@@ -182,7 +187,7 @@ export function SpreadsheetInput({ kind, rows, input2Rows=[], onRowsChange, onAc
     source.forEach((line:any[],rowIndex:number) => {
       if(rowIndex<dataStart||!Array.isArray(line))return;
       const currentDraftIndex=worksheetRowToDraftIndex.current.get(rowIndex);
-      const currentRow=currentDraftIndex===undefined?undefined:latestSelection.current.rows[currentDraftIndex];
+      const currentRow=currentDraftIndex===undefined?undefined:liveRowsRef.current[currentDraftIndex];
       const values=columns.map((column,c)=>{
         const cell=line[c];
         // FortuneSheet can report a sparse matrix on edits. A missing cell means
@@ -241,6 +246,9 @@ export function SpreadsheetInput({ kind, rows, input2Rows=[], onRowsChange, onAc
       changed=true;
     });
     if(changed) {
+      // Update synchronously before notifying React. This preserves every row
+      // when paste emits multiple onChange events in the same render frame.
+      liveRowsRef.current=next;
       lastLocalSignature.current=JSON.stringify(next);
       onRowsChange(next);
     }
