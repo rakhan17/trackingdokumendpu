@@ -11,17 +11,9 @@ export interface SessionDraft {
 const storageKey = (kind: DraftKind) => `tracking-dpu:draft:${kind}`;
 const memory = new Map<DraftKind, SessionDraft>();
 
-// sessionStorage survives SPA route unmounts. Clear drafts on a hard refresh,
-// matching the requested lifecycle: keep while navigating, discard on refresh/close.
-if (typeof window !== 'undefined') {
-  const nav = performance.getEntriesByType('navigation')[0] as PerformanceNavigationTiming | undefined;
-  if (nav?.type === 'reload') {
-    try {
-      sessionStorage.removeItem(storageKey('input_1'));
-      sessionStorage.removeItem(storageKey('input_2'));
-    } catch { /* storage may be unavailable in private/restricted contexts */ }
-  }
-}
+// sessionStorage preserves drafts across route changes AND page refreshes,
+// while automatically clearing them when the browser tab/session is closed.
+// A successful Firebase save explicitly removes the corresponding draft.
 
 function cloneDraft(draft: SessionDraft): SessionDraft {
   return { rows: draft.rows.map(row => ({ ...row })), deletedIds: [...draft.deletedIds], dirty: draft.dirty };
