@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useMemo, useRef } from 'react';
-import { Workbook } from '@fortune-sheet/react';
+import { Workbook, type WorkbookInstance } from '@fortune-sheet/react';
 import '@fortune-sheet/react/dist/index.css';
 import { toast } from 'sonner';
 import { INPUT1_COLUMNS, INPUT2_COLUMNS, type Input1Row, type Input2Row } from '../types';
@@ -12,7 +12,7 @@ export function SpreadsheetInput({ kind, rows, input2Rows=[], onRowsChange, onAc
   rows: Row[];
   input2Rows?: Input2Row[];
   onRowsChange: (rows: Row[]) => void;
-  onActiveRowChange?: (id: string) => void;
+  onActiveRowChange?: (id: string, insertValue?: (value:string)=>void) => void;
 }) {
   const isOne = kind === 'input_1';
   const columns = isOne ? INPUT1_COLUMNS : INPUT2_COLUMNS;
@@ -20,7 +20,18 @@ export function SpreadsheetInput({ kind, rows, input2Rows=[], onRowsChange, onAc
   const dataStart = 1;
   const baseline = useRef<string[][]>([]);
   const mounted = useRef(false);
-  const workbookRef = useRef<any>(null);
+  const workbookRef = useRef<WorkbookInstance|null>(null);
+  const allowedKeyChange = useRef<string|null>(null);
+  const lastLocalSignature = useRef<string|null>(null);
+  const [renderRows,setRenderRows] = useState<Row[]>(rows);
+  const latestSelection = useRef({isOne,columns,dataStart,rows,onActiveRowChange});
+  latestSelection.current={isOne,columns,dataStart,rows,onActiveRowChange};
+
+  useEffect(()=>{
+    const signature=JSON.stringify(rows);
+    if(lastLocalSignature.current===signature){lastLocalSignature.current=null;return;}
+    setRenderRows(rows);
+  },[rows]);
 
   const sheetData = useMemo(() => {
     const cells: any[] = [];
@@ -50,7 +61,7 @@ export function SpreadsheetInput({ kind, rows, input2Rows=[], onRowsChange, onAc
       });
     }
 
-    const dataCells = rows.flatMap((row,index) => columns.map((column,c) => {
+    const dataCells = renderRows.flatMap((row,index) => columns.map((column,c) => {
       const key=String(column.key);
       const raw=(row as any)[key];
       const value=raw==null?'':String(raw);
@@ -67,7 +78,7 @@ export function SpreadsheetInput({ kind, rows, input2Rows=[], onRowsChange, onAc
     }));
     cells.push(...dataCells);
 
-    const formattedRows=Math.max(100,rows.length+30);
+    const formattedRows=Math.max(100,renderRows.length+30);
     const textColumns=columns.map((column,index) =>
       ['nomor_spp','nomor_spm','nomor_sp2d'].includes(String(column.key))?index:-1
     ).filter(index=>index>=0);
@@ -102,7 +113,7 @@ export function SpreadsheetInput({ kind, rows, input2Rows=[], onRowsChange, onAc
         }],
       },
     }];
-  },[columns,dataStart,isOne,rows]);
+  },[columns,dataStart,isOne,renderRows]);
 
   useEffect(() => {
     mounted.current=true;
@@ -114,17 +125,22 @@ export function SpreadsheetInput({ kind, rows, input2Rows=[], onRowsChange, onAc
   },[rows,columns]);
 
   const onSelectionChange = useCallback((_sheetId:string, active:any) => {
-    if(!mounted.current || !isOne) return;
+    if(!mounted.current)return;
+    const current=latestSelection.current;
+    if(!current.isOne)return;
     const row=active?.row_focus??active?.row?.[0];
     const col=active?.column_focus??active?.column?.[0];
-    const keyColumn=columns.findIndex(column=>column.key==='nomor_spm');
-    if(typeof row==='number'&&col===keyColumn&&row>=dataStart) {
-      const target=rows[row-dataStart];
-      if(target) onActiveRowChange?.(target.id);
+    const keyColumn=current.columns.findIndex(column=>column.key==='nomor_spm');
+    if(typeof row==='number'&&col===keyColumn&&row>=current.dataStart) {
+      const target=current.rows[row-current.dataStart];
+      if(target)current.onActiveRowChange?.(target.id,(value:string)=>{
+        allowedKeyChange.current=value;
+        workbookRef.current?.setCellValue(row,keyColumn,value);
+      });
     } else {
-      onActiveRowChange?.('');
+      current.onActiveRowChange?.('');
     }
-  },[columns,dataStart,isOne,onActiveRowChange,rows]);
+  },[]);
 
   const onChange = useCallback((workbookData:any[]) => {
     if(!mounted.current) return;
@@ -152,8 +168,11 @@ export function SpreadsheetInput({ kind, rows, input2Rows=[], onRowsChange, onAc
       });
 
       if(isOne&&updated.nomor_spm!==next[index].nomor_spm) {
-        toast.error('Nomor SPM di Input 1 hanya bisa dipilih melalui tombol Insert.');
-        return;
+        if(allowedKeyChange.current!==updated.nomor_spm) {
+          toast.error('Nomor SPM di Input 1 hanya bisa dipilih melalui tombol Insert.');
+          return;
+        }
+        allowedKeyChange.current=null;
       }
       if(isOne&&updated.nomor_spm) {
         const linked=input2Rows.find(option=>String(option.nomor_spm).trim()===String(updated.nomor_spm).trim());
@@ -166,7 +185,10 @@ export function SpreadsheetInput({ kind, rows, input2Rows=[], onRowsChange, onAc
       next[index]=updated;
       changed=true;
     });
-    if(changed) onRowsChange(next);
+    if(changed) {
+      lastLocalSignature.current=JSON.stringify(next);
+      onRowsChange(next);
+    }
   },[columns,dataStart,input2Rows,isOne,onRowsChange,rows]);
 
   return <div className="fortune-wrap">
