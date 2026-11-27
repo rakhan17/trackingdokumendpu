@@ -150,3 +150,44 @@
 .sheet-toolbar{position:relative;z-index:20;overflow:visible}
 .sheet-grid-frame{position:relative;z-index:1}
 @media(max-width:700px){.spm-insert-menu{left:auto;right:0;width:min(430px,calc(100vw - 82px))}}
+
+
+/* Keep the application action bar and FortuneSheet's own tools reachable. */
+.sheet-toolbar{
+  flex-wrap:wrap!important;
+  overflow:visible!important;
+  white-space:normal!important;
+  align-content:center;
+  row-gap:7px;
+}
+.sheet-toolbar>*{flex:0 0 auto;min-width:0}
+.sheet-toolbar .save-state{margin-left:auto;white-space:nowrap;flex:0 0 auto}
+.sheet-toolbar .save-button{white-space:nowrap}
+.sheet-toolbar .spm-insert-wrap{flex:0 0 auto}
+.spm-insert-menu{max-width:min(460px,calc(100vw - 96px));}
+.fortune-container,.fortune-workarea{min-width:0!important;max-width:100%;box-sizing:border-box}
+.fortune-workarea{flex:0 0 auto}
+.fortune-toolbar{
+  width:100%!important;
+  max-width:100%!important;
+  box-sizing:border-box!important;
+  overflow-x:auto!important;
+  overflow-y:hidden!important;
+  flex-wrap:nowrap!important;
+  scrollbar-width:thin;
+  scrollbar-color:#cbd5e1 transparent;
+}
+.fortune-toolbar-button,.fortune-toolbar-combo,.fortune-toolbar-divider{
+  flex:0 0 auto!important;
+}
+.fortune-toolbar::-webkit-scrollbar{height:6px}
+.fortune-toolbar::-webkit-scrollbar-thumb{background:#cbd5e1;border-radius:8px}
+.fortune-toolbar::-webkit-scrollbar-track{background:transparent}
+.sheet-grid-frame,.fortune-wrap{min-width:0!important;max-width:100%}
+.sheet-route .sheet-toolbar{height:auto!important;min-height:54px;flex:0 0 auto}
+@media(max-width:760px){
+  .sheet-toolbar{justify-content:flex-start}
+  .sheet-toolbar .save-state{margin-left:0}
+  .sheet-toolbar .save-button{margin-left:auto}
+  .fortune-toolbar{padding-left:8px!important}
+}
