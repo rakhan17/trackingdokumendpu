@@ -28,15 +28,16 @@ export default function SpreadsheetPage({ kind, rows, input2Rows = [] }: { kind:
 
   const selected = draftRows.find(row=>row.id===selectedId);
   const spmMatches = input2Rows.filter(row=>String(row.nomor_spm||'').toLowerCase().includes(spmSearch.toLowerCase())).slice(0,50);
-  const handleActiveSpmCell=useCallback((id:string)=>{
-    if(!id){setSelectedId('');setActiveSpmCell(false);if(!insertOpen)setInsertOpen(false);return;}
-    setSelectedId(id);setActiveSpmCell(true);
+  const handleActiveSpmCell=useCallback((id:string,insertValue?:((value:string)=>void))=>{
+    if(!id){setSelectedId('');setActiveSpmCell(false);insertValueRef.current=null;if(!insertOpen)setInsertOpen(false);return;}
+    setSelectedId(id);setActiveSpmCell(true);insertValueRef.current=insertValue??null;
     // FortuneSheet may emit selection callbacks while the toolbar opens. Keep the picker
     // open when the active key cell is still the same row.
     if(id!==selectedId)setInsertOpen(false);
   },[selectedId,insertOpen]);
   function chooseSpm(option:Input2Row){
     if(!selected || !isOne || !activeSpmCell){toast.error('Klik sel Nomor SPM di Input 1 terlebih dahulu.');return;}
+    insertValueRef.current?.(option.nomor_spm);
     markDraft(draftRows.map(row=>row.id===selected.id?({...row,nomor_spm:option.nomor_spm,tanggal_spm:option.tanggal_spm,nilai_spm:option.nilai_bruto,bulan:option.bulan} as Row):row));
     setSpmSearch('');setInsertOpen(false);
     toast.success('Nomor SPM dimasukkan ke sel yang dipilih. Tekan ⌘ + S / Ctrl + S untuk menyimpan.');
@@ -57,14 +58,14 @@ export default function SpreadsheetPage({ kind, rows, input2Rows = [] }: { kind:
     const row:Row=isOne
       ? {id,no:String(draftRows.length+1),nomor_spp:'',tanggal_spp:'',nilai_spp:null,nomor_spm:'',tanggal_spm:'',nilai_spm:null,nomor_sp2d:'',tanggal_sp2d:'',nilai_sp2d:null,bulan:''}
       : {id,no:String(draftRows.length+1),tanggal_spm:'',nomor_spm:'',unit_skpd:'',nama_penerima:'',keterangan:'',jenis_spm:'',nilai_bruto:null,bulan:''};
-    markDraft([...draftRows,row]);setSelectedId(id);setActiveSpmCell(false);setInsertOpen(false);
+    markDraft([...draftRows,row]);setSelectedId(id);setActiveSpmCell(false);insertValueRef.current=null;setInsertOpen(false);
   }
 
   function deleteSelected(){
     if(!selected){toast.error('Pilih baris yang ingin dihapus terlebih dahulu.');return;}
     setDraftRows(current=>current.filter(row=>row.id!==selected.id));
     if(rows.some(row=>row.id===selected.id)) setDeletedIds(current=>[...current,selected.id]);
-    setDirty(true);setSelectedId('');setActiveSpmCell(false);setInsertOpen(false);
+    setDirty(true);setSelectedId('');setActiveSpmCell(false);insertValueRef.current=null;setInsertOpen(false);
   }
 
   const saveDraft=useCallback(async()=>{
