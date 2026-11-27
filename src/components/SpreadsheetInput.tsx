@@ -202,7 +202,7 @@ export function SpreadsheetInput({ kind, rows, input2Rows=[], onRowsChange, onAc
         const key=String(column.key);
         const raw=values[c];
         if(['nilai_spp','nilai_spm','nilai_sp2d','nilai_bruto'].includes(key)){
-          const normalized=raw.replace(/[\\sRp.]/g,'').replace(/,/g,'.');
+          const normalized=raw.replace(/[\sRp.]/g,'').replace(/,/g,'.');
           updated[key]=normalized===''?null:Number(normalized);
         }else updated[key]=raw;
       });
