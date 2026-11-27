@@ -164,7 +164,12 @@ export function SpreadsheetInput({ kind, rows, input2Rows=[], onRowsChange, onAc
       const index=rowIndex-dataStart;
       if(index<0||index>=next.length||!Array.isArray(line)) return;
       const previous=baseline.current[index]??[];
-      const values=columns.map((column,c)=>String(line[c]?.v??line[c]?.m??''));
+      const values=columns.map((column,c)=>{
+        const cell=line[c];
+        if(cell==null) return '';
+        if(typeof cell==='object') return String(cell.v??cell.m??'');
+        return String(cell);
+      });
       if(values.every((value,c)=>value===(previous[c]??''))) return;
 
       const updated:any={...next[index]};
