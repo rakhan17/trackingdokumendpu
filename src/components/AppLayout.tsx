@@ -12,6 +12,6 @@ export default function AppLayout(){
    <div className="nav-label">WORKSPACE</div><nav>{links.map(({to,label,icon:Icon})=><NavLink key={to} to={to} end={to==='/'} title={collapsed?label:undefined} className={({isActive})=>isActive?'nav-link active':'nav-link'}><Icon size={17}/><span>{label}</span></NavLink>)}</nav>
    <div className="sidebar-bottom"><div className="user-card"><div className="avatar">{user?.email?.[0]?.toUpperCase()??'A'}</div><div className="user-info"><strong>{user?.email?.split('@')[0]??'Administrator'}</strong><span>Signed in</span></div><button title="Keluar" className="icon-button" onClick={exit}><LogOut size={17}/></button></div></div>
   </aside>
-  <main className="main-area">{!isSheet&&<header className="topbar no-print"><div><span className="topbar-kicker">DINAS PEKERJAAN UMUM</span><span className="topbar-title">Tracking Dokumen Keuangan</span></div><div className="topbar-status"><span className="status-dot"/> Terhubung</div></header>}<div className="page-content"><Outlet/></div></main>
+  <main className="main-area">{!isSheet&&<header className="topbar no-print"><div><span className="topbar-kicker">DINAS PEKERJAAN UMUM</span><span className="topbar-title">Tracking Dokumen Keuangan</span></div><div className="topbar-status"><span className="status-dot"/> Terhubung</div></header>}<div className="page-content" key={location.pathname}><Outlet/></div></main>
  </div>;
 }
