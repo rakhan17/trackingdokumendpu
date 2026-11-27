@@ -2,14 +2,10 @@ import { useCallback, useEffect, useMemo, useRef } from 'react';
 import { Workbook } from '@fortune-sheet/react';
 import '@fortune-sheet/react/dist/index.css';
 import { toast } from 'sonner';
-import { createRowId } from '../lib/firestoreService';
 import { INPUT1_COLUMNS, INPUT2_COLUMNS, type Input1Row, type Input2Row } from '../types';
 
 type Kind = 'input_1' | 'input_2';
 type Row = Input1Row | Input2Row;
-
-const blank1 = (): Input1Row => ({ id:createRowId(), no:'', nomor_spp:'', tanggal_spp:'', nilai_spp:null, nomor_spm:'', tanggal_spm:'', nilai_spm:null, nomor_sp2d:'', tanggal_sp2d:'', nilai_sp2d:null, bulan:'' });
-const blank2 = (): Input2Row => ({ id:createRowId(), no:'', tanggal_spm:'', nomor_spm:'', unit_skpd:'', nama_penerima:'', keterangan:'', jenis_spm:'', nilai_bruto:null, bulan:'' });
 
 export function SpreadsheetInput({ kind, rows, input2Rows=[], onRowsChange, onActiveRowChange }: {
   kind: Kind;
@@ -125,6 +121,8 @@ export function SpreadsheetInput({ kind, rows, input2Rows=[], onRowsChange, onAc
     if(typeof row==='number'&&col===keyColumn&&row>=dataStart) {
       const target=rows[row-dataStart];
       if(target) onActiveRowChange?.(target.id);
+    } else {
+      onActiveRowChange?.('');
     }
   },[columns,dataStart,isOne,onActiveRowChange,rows]);
 
