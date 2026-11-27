@@ -170,6 +170,8 @@ export function SpreadsheetInput({ kind, rows, input2Rows=[], onRowsChange, onAc
 
       if(isOne&&updated.nomor_spm!==next[index].nomor_spm) {
         if(allowedKeyChange.current!==updated.nomor_spm) {
+          const keyColumn=columns.findIndex(column=>column.key==='nomor_spm');
+          workbookRef.current?.setCellValue(rowIndex,keyColumn,next[index].nomor_spm||'');
           toast.error('Nomor SPM di Input 1 hanya bisa dipilih melalui tombol Insert.');
           return;
         }
