@@ -144,14 +144,19 @@ export function SpreadsheetInput({ kind, rows, input2Rows=[], onRowsChange, onAc
     const col=active?.column_focus??active?.column?.[0];
     const keyColumn=current.columns.findIndex(column=>column.key==='nomor_spm');
     if(typeof row==='number'&&col===keyColumn&&row>=current.dataStart) {
-      let target=current.rows[row-current.dataStart];
+      const mappedIndex=worksheetRowToDraftIndex.current.get(row);
+      let target=mappedIndex===undefined?undefined:liveRowsRef.current[mappedIndex];
       // Make an empty Input 1 row when the user selects its primary-key cell,
       // so Insert is available even before using the separate Add row button.
       if(!target) {
-        const newRow:Input1Row={id:createRowId(),no:String(current.rows.length+1),nomor_spp:'',tanggal_spp:'',nilai_spp:null,nomor_spm:'',tanggal_spm:'',nilai_spm:null,nomor_sp2d:'',tanggal_sp2d:'',nilai_sp2d:null,bulan:''};
+        const currentRows=liveRowsRef.current;
+        const newRow:Input1Row={id:createRowId(),no:String(currentRows.length+1),nomor_spp:'',tanggal_spp:'',nilai_spp:null,nomor_spm:'',tanggal_spm:'',nilai_spm:null,nomor_sp2d:'',tanggal_sp2d:'',nilai_sp2d:null,bulan:''};
         target=newRow;
-        const next=[...current.rows,newRow];
-        worksheetRowToDraftIndex.current.set(row,next.length-1);
+        const next=[...currentRows,newRow];
+        const draftIndex=next.length-1;
+        worksheetRowToDraftIndex.current.set(row,draftIndex);
+        liveRowsRef.current=next;
+        lastLocalSignature.current=JSON.stringify(next);
         current.onRowsChange(next);
       }
       current.onActiveRowChange?.(target.id,(value:string)=>{
