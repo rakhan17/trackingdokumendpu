@@ -29,7 +29,7 @@ export default function SpreadsheetPage({ kind, rows, input2Rows = [] }: { kind:
   const selected = draftRows.find(row=>row.id===selectedId);
   const spmMatches = input2Rows.filter(row=>String(row.nomor_spm||'').toLowerCase().includes(spmSearch.toLowerCase())).slice(0,50);
   const handleActiveSpmCell=useCallback((id:string,insertValue?:((value:string)=>void))=>{
-    if(!id){setSelectedId('');setActiveSpmCell(false);insertValueRef.current=null;if(!insertOpen)setInsertOpen(false);return;}
+    if(!id){if(insertOpen)return;setSelectedId('');setActiveSpmCell(false);insertValueRef.current=null;setInsertOpen(false);return;}
     setSelectedId(id);setActiveSpmCell(true);insertValueRef.current=insertValue??null;
     // FortuneSheet may emit selection callbacks while the toolbar opens. Keep the picker
     // open when the active key cell is still the same row.
@@ -47,7 +47,12 @@ export default function SpreadsheetPage({ kind, rows, input2Rows = [] }: { kind:
   useEffect(()=>{
     if(!insertOpen)return;
     const closeOutside=(event:PointerEvent)=>{
-      if(!insertWrapRef.current?.contains(event.target as Node))setInsertOpen(false);
+      if(insertWrapRef.current?.contains(event.target as Node))return;
+      setInsertOpen(false);
+      const target=event.target as HTMLElement|null;
+      if(target?.closest?.('.fortune-wrap')){
+        setSelectedId('');setActiveSpmCell(false);insertValueRef.current=null;
+      }
     };
     document.addEventListener('pointerdown',closeOutside);
     return()=>document.removeEventListener('pointerdown',closeOutside);
