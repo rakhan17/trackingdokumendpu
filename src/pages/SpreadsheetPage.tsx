@@ -138,16 +138,10 @@ export default function SpreadsheetPage({ kind, rows, input2Rows = [] }: { kind:
     if (saving) return;
     const currentRows = draftRowsRef.current;
     const currentDeleted = deletedIdsRef.current;
-    const baseById = new Map(baseRowsRef.current.map(row => [row.id, row]));
-    const changedRows = currentRows.filter(row => {
-      const base = baseById.get(row.id);
-      return !base || comparable(base) !== comparable(row);
-    });
-    // If the spreadsheet marked a draft dirty but comparison missed its edits,
-    // save the current rows rather than clearing the draft as "no changes".
-    const rowsToSave = changedRows.length === 0 && dirtyRef.current && currentRows.length > 0
-      ? currentRows
-      : changedRows;
+    // Always write the complete draft when dirty. The dataset is small, and
+    // this avoids losing edits when the spreadsheet emits sparse/normalized
+    // values that make a row-level diff incorrectly look unchanged.
+    const rowsToSave = dirtyRef.current ? currentRows : [];
     const total = rowsToSave.length + currentDeleted.length;
 
     if (total === 0) {
