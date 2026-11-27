@@ -2,6 +2,7 @@ import { memo, useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { Workbook, type WorkbookInstance } from '@fortune-sheet/react';
 import '@fortune-sheet/react/dist/index.css';
 import { toast } from 'sonner';
+import { createRowId } from '../lib/firestoreService';
 import { INPUT1_COLUMNS, INPUT2_COLUMNS, type Input1Row, type Input2Row } from '../types';
 
 type Kind = 'input_1' | 'input_2';
@@ -24,6 +25,9 @@ export function SpreadsheetInput({ kind, rows, input2Rows=[], onRowsChange, onAc
   const workbookRef = useRef<WorkbookInstance|null>(null);
   const allowedKeyChange = useRef<string|null>(null);
   const lastLocalSignature = useRef<string|null>(null);
+  // Map visible worksheet row indexes to draft array indexes. This lets users
+  // type directly into blank spreadsheet rows without pressing Add row first.
+  const worksheetRowToDraftIndex = useRef<Map<number,number>>(new Map());
   const [renderRows,setRenderRows] = useState<Row[]>(rows);
   const latestSelection = useRef({isOne,columns,dataStart,rows,onActiveRowChange});
   latestSelection.current={isOne,columns,dataStart,rows,onActiveRowChange};
@@ -31,8 +35,10 @@ export function SpreadsheetInput({ kind, rows, input2Rows=[], onRowsChange, onAc
   useEffect(()=>{
     const signature=JSON.stringify(rows);
     if(lastLocalSignature.current===signature){lastLocalSignature.current=null;return;}
+    worksheetRowToDraftIndex.current.clear();
+    rows.forEach((_row,index)=>worksheetRowToDraftIndex.current.set(dataStart+index,index));
     setRenderRows(rows);
-  },[rows]);
+  },[rows,dataStart]);
 
   const sheetData = useMemo(() => {
     const cells: any[] = [];
@@ -160,46 +166,65 @@ export function SpreadsheetInput({ kind, rows, input2Rows=[], onRowsChange, onAc
 
     const next=[...latestSelection.current.rows] as Row[];
     let changed=false;
+    const makeEmptyRow=(id:string,no:string):Row=>current.isOne
+      ? {id,no,nomor_spp:'',tanggal_spp:'',nilai_spp:null,nomor_spm:'',tanggal_spm:'',nilai_spm:null,nomor_sp2d:'',tanggal_sp2d:'',nilai_sp2d:null,bulan:''}
+      : {id,no,tanggal_spm:'',nomor_spm:'',unit_skpd:'',nama_penerima:'',keterangan:'',jenis_spm:'',nilai_bruto:null,bulan:''};
+
     source.forEach((line:any[],rowIndex:number) => {
-      const index=rowIndex-dataStart;
-      if(index<0||index>=next.length||!Array.isArray(line)) return;
-      const previous=baseline.current[index]??[];
+      if(rowIndex<dataStart||!Array.isArray(line))return;
       const values=columns.map((column,c)=>{
         const cell=line[c];
-        if(cell==null) return '';
-        if(typeof cell==='object') return String(cell.v??cell.m??'');
+        if(cell==null)return '';
+        if(typeof cell==='object')return String(cell.v??cell.m??'');
         return String(cell);
       });
-      if(values.every((value,c)=>value===(previous[c]??''))) return;
+      const hasContent=values.some(value=>value.trim()!=='');
+      let draftIndex=worksheetRowToDraftIndex.current.get(rowIndex);
 
-      const updated:any={...next[index]};
-      columns.forEach((column,c) => {
+      // Previously every edit beyond rows.length was discarded here.
+      // FortuneSheet renders empty editable rows, so normal direct entry into
+      // a blank row never reached the draft or Firebase save pipeline.
+      if(draftIndex===undefined){
+        if(!hasContent)return;
+        const newRow=makeEmptyRow(createRowId(),String(next.length+1));
+        draftIndex=next.length;
+        next.push(newRow);
+        worksheetRowToDraftIndex.current.set(rowIndex,draftIndex);
+      }
+
+      const existing=next[draftIndex];
+      if(!existing)return;
+      const previous=baseline.current[draftIndex]??[];
+      if(values.every((value,c)=>value===(previous[c]??'')))return;
+
+      const updated:any={...existing};
+      columns.forEach((column,c)=>{
         const key=String(column.key);
         const raw=values[c];
-        if(['nilai_spp','nilai_spm','nilai_sp2d','nilai_bruto'].includes(key)) {
-          const normalized=raw.replace(/[\sRp.]/g,'').replace(/,/g,'.');
+        if(['nilai_spp','nilai_spm','nilai_sp2d','nilai_bruto'].includes(key)){
+          const normalized=raw.replace(/[\\sRp.]/g,'').replace(/,/g,'.');
           updated[key]=normalized===''?null:Number(normalized);
-        } else updated[key]=raw;
+        }else updated[key]=raw;
       });
 
-      if(isOne&&updated.nomor_spm!==next[index].nomor_spm) {
-        if(allowedKeyChange.current!==updated.nomor_spm) {
+      if(isOne&&updated.nomor_spm!==existing.nomor_spm){
+        if(allowedKeyChange.current!==updated.nomor_spm){
           const keyColumn=columns.findIndex(column=>column.key==='nomor_spm');
-          workbookRef.current?.setCellValue(rowIndex,keyColumn,next[index].nomor_spm||'');
+          workbookRef.current?.setCellValue(rowIndex,keyColumn,existing.nomor_spm||'');
           toast.error('Nomor SPM di Input 1 hanya bisa dipilih melalui tombol Insert.');
           return;
         }
         allowedKeyChange.current=null;
       }
-      if(isOne&&updated.nomor_spm) {
+      if(isOne&&updated.nomor_spm){
         const linked=input2Rows.find(option=>String(option.nomor_spm).trim()===String(updated.nomor_spm).trim());
-        if(linked) {
+        if(linked){
           updated.tanggal_spm=linked.tanggal_spm;
           updated.nilai_spm=linked.nilai_bruto;
           updated.bulan=linked.bulan;
         }
       }
-      next[index]=updated;
+      next[draftIndex]=updated;
       changed=true;
     });
     if(changed) {
