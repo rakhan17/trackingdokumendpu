@@ -58,7 +58,12 @@ export default function SpreadsheetPage({ kind, rows, input2Rows = [] }: { kind:
   }, [rows, saving]);
 
   const selected = draftRows.find(row => row.id === selectedId);
-  const spmMatches = input2Rows.filter(row => String(row.nomor_spm || '').toLowerCase().includes(spmSearch.toLowerCase()));
+  // Only actual non-empty primary-key values from Input 2 are insertable.
+  // Trim whitespace and deduplicate by the key itself, not by display row.
+  const spmMatches = Array.from(new Map(input2Rows
+    .map(row => ({ row, key: String(row.nomor_spm ?? '').trim() }))
+    .filter(item => item.key.length > 0 && item.key.toLowerCase().includes(spmSearch.trim().toLowerCase()))
+    .map(item => [item.key, item.row])).values());
 
   const handleActiveSpmCell = useCallback((id: string, insertValue?: ((value: string) => void), isKeyCell = false) => {
     if (!id) {
