@@ -9,6 +9,7 @@ import SpreadsheetPage from './pages/SpreadsheetPage';
 import OutputPage from './pages/OutputPage';
 import { db } from './firebase';
 import type { Input1Row, Input2Row } from './types';
+import { getSessionDraft } from './lib/sessionDrafts';
 import { Toaster, toast } from 'sonner';
 
 function Protected({ children }: { children: JSX.Element }) {
@@ -44,7 +45,20 @@ function InputRoute({kind}:{kind:'input_1'|'input_2'}) {
   useEffect(() => onSnapshot(collection(db,kind),s=>setRows(s.docs.map(d=>({...d.data(),id:d.id} as Input1Row|Input2Row))),e=>toast.error('Firestore: '+e.message)),[kind]);
   useEffect(() => {
     if (kind !== 'input_1') return;
-    return onSnapshot(collection(db,'input_2'),s=>setInput2Rows(s.docs.map(d=>({...d.data(),id:d.id} as Input2Row))),e=>toast.error('Gagal memuat daftar Nomor SPM: '+e.message));
+    const mergeWithSessionDraft = (serverRows: Input2Row[]) => {
+      const draft = getSessionDraft('input_2');
+      if (!draft?.dirty) return serverRows;
+      const draftRows = draft.rows as Input2Row[];
+      const byId = new Map(serverRows.map(row => [row.id, row]));
+      draftRows.forEach(row => byId.set(row.id, row));
+      return [...byId.values()];
+    };
+    const cachedDraft = getSessionDraft('input_2');
+    if (cachedDraft?.dirty) setInput2Rows(cachedDraft.rows as Input2Row[]);
+    return onSnapshot(collection(db,'input_2'),s=>{
+      const serverRows = s.docs.map(d=>({...d.data(),id:d.id} as Input2Row));
+      setInput2Rows(mergeWithSessionDraft(serverRows));
+    },e=>toast.error('Gagal memuat daftar Nomor SPM: '+e.message));
   },[kind]);
   return <SpreadsheetPage key={kind} kind={kind} rows={rows} input2Rows={input2Rows}/>;
 }
