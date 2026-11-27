@@ -28,9 +28,9 @@ export default function SpreadsheetPage({ kind, rows, input2Rows = [] }: { kind:
 
   const selected = draftRows.find(row=>row.id===selectedId);
   const spmMatches = input2Rows.filter(row=>String(row.nomor_spm||'').toLowerCase().includes(spmSearch.toLowerCase())).slice(0,50);
-  const handleActiveSpmCell=useCallback((id:string,insertValue?:((value:string)=>void))=>{
+  const handleActiveSpmCell=useCallback((id:string,insertValue?:((value:string)=>void),isKeyCell=false)=>{
     if(!id){if(insertOpen)return;setSelectedId('');setActiveSpmCell(false);insertValueRef.current=null;setInsertOpen(false);return;}
-    setSelectedId(id);setActiveSpmCell(true);insertValueRef.current=insertValue??null;
+    setSelectedId(id);setActiveSpmCell(isKeyCell);insertValueRef.current=isKeyCell?(insertValue??null):null;
     // FortuneSheet may emit selection callbacks while the toolbar opens. Keep the picker
     // open when the active key cell is still the same row.
     if(id!==selectedId)setInsertOpen(false);
