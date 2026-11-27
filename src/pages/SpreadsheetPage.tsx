@@ -143,13 +143,20 @@ export default function SpreadsheetPage({ kind, rows, input2Rows = [] }: { kind:
       const base = baseById.get(row.id);
       return !base || comparable(base) !== comparable(row);
     });
-    const total = changedRows.length + currentDeleted.length;
+    // If the spreadsheet marked a draft dirty but comparison missed its edits,
+    // save the current rows rather than clearing the draft as "no changes".
+    const rowsToSave = changedRows.length === 0 && dirtyRef.current && currentRows.length > 0
+      ? currentRows
+      : changedRows;
+    const total = rowsToSave.length + currentDeleted.length;
 
     if (total === 0) {
-      clearSessionDraft(kind);
-      dirtyRef.current = false;
-      setDirty(false);
-      toast.info('Tidak ada perubahan untuk disimpan.');
+      if (!dirtyRef.current) {
+        toast.info('Tidak ada perubahan untuk disimpan.');
+      } else {
+        toast.error('Draft masih ada, tetapi belum ada baris yang bisa dikirim. Draft tidak dihapus.');
+        setSessionDraft(kind, { rows: currentRows as DraftRow[], deletedIds: currentDeleted, dirty: true });
+      }
       return;
     }
 
@@ -157,7 +164,7 @@ export default function SpreadsheetPage({ kind, rows, input2Rows = [] }: { kind:
     setProgress(0);
     try {
       let done = 0;
-      for (const row of changedRows) {
+      for (const row of rowsToSave) {
         await saveRow(kind, row);
         done += 1;
         setProgress(Math.round(done / total * 100));
@@ -176,7 +183,7 @@ export default function SpreadsheetPage({ kind, rows, input2Rows = [] }: { kind:
       setDirty(false);
       clearSessionDraft(kind);
       setProgress(100);
-      toast.success(`Berhasil menyimpan ${total} perubahan ke Firebase.`);
+      toast.success(`Berhasil menyimpan ${total} operasi ke Firebase.`);
     } catch (error) {
       const message = error instanceof Error ? error.message : String(error);
       toast.error(`Gagal menyimpan ke Firebase: ${message}`);
