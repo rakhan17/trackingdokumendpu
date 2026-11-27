@@ -8,28 +8,52 @@ export interface SessionDraft {
   dirty: boolean;
 }
 
-// Module memory is intentionally used instead of local/sessionStorage:
-// it survives React route unmounts within this open tab, but disappears on
-// refresh or closing the tab, exactly as requested.
-const drafts = new Map<DraftKind, SessionDraft>();
+const storageKey = (kind: DraftKind) => `tracking-dpu:draft:${kind}`;
+const memory = new Map<DraftKind, SessionDraft>();
+
+// sessionStorage survives SPA route unmounts. Clear drafts on a hard refresh,
+// matching the requested lifecycle: keep while navigating, discard on refresh/close.
+if (typeof window !== 'undefined') {
+  const nav = performance.getEntriesByType('navigation')[0] as PerformanceNavigationTiming | undefined;
+  if (nav?.type === 'reload') {
+    try {
+      sessionStorage.removeItem(storageKey('input_1'));
+      sessionStorage.removeItem(storageKey('input_2'));
+    } catch { /* storage may be unavailable in private/restricted contexts */ }
+  }
+}
+
+function cloneDraft(draft: SessionDraft): SessionDraft {
+  return { rows: draft.rows.map(row => ({ ...row })), deletedIds: [...draft.deletedIds], dirty: draft.dirty };
+}
 
 export function getSessionDraft(kind: DraftKind): SessionDraft | undefined {
-  const draft = drafts.get(kind);
-  return draft ? {
-    rows: draft.rows.map(row => ({ ...row })),
-    deletedIds: [...draft.deletedIds],
-    dirty: draft.dirty,
-  } : undefined;
+  const cached = memory.get(kind);
+  if (cached) return cloneDraft(cached);
+  if (typeof window === 'undefined') return undefined;
+  try {
+    const raw = sessionStorage.getItem(storageKey(kind));
+    if (!raw) return undefined;
+    const parsed = JSON.parse(raw) as SessionDraft;
+    if (!Array.isArray(parsed.rows) || !Array.isArray(parsed.deletedIds)) return undefined;
+    memory.set(kind, cloneDraft(parsed));
+    return cloneDraft(parsed);
+  } catch {
+    return undefined;
+  }
 }
 
 export function setSessionDraft(kind: DraftKind, draft: SessionDraft): void {
-  drafts.set(kind, {
-    rows: draft.rows.map(row => ({ ...row })),
-    deletedIds: [...draft.deletedIds],
-    dirty: draft.dirty,
-  });
+  const copy = cloneDraft(draft);
+  memory.set(kind, copy);
+  if (typeof window !== 'undefined') {
+    try { sessionStorage.setItem(storageKey(kind), JSON.stringify(copy)); } catch { /* memory fallback */ }
+  }
 }
 
 export function clearSessionDraft(kind: DraftKind): void {
-  drafts.delete(kind);
+  memory.delete(kind);
+  if (typeof window !== 'undefined') {
+    try { sessionStorage.removeItem(storageKey(kind)); } catch { /* ignore */ }
+  }
 }
